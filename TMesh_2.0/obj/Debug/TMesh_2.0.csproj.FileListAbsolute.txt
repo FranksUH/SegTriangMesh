@@ -1,0 +1,12 @@
+C:\Users\Sergio\Documents\Visual Studio 2013\Projects\TMesh_2.0\TMesh_2.0\bin\Debug\TMesh_2.0.exe
+C:\Users\Sergio\Documents\Visual Studio 2013\Projects\TMesh_2.0\TMesh_2.0\bin\Debug\TMesh_2.0.exe.config
+C:\Users\Sergio\Documents\Visual Studio 2013\Projects\TMesh_2.0\TMesh_2.0\bin\Debug\Tao.OpenGl.xml
+C:\Users\Sergio\Documents\Visual Studio 2013\Projects\TMesh_2.0\TMesh_2.0\bin\Debug\Tao.Platform.Windows.xml
+C:\Users\Sergio\Documents\Visual Studio 2013\Projects\TMesh_2.0\TMesh_2.0\obj\Debug\TMesh_2._0.Form1.resources
+C:\Users\Sergio\Documents\Visual Studio 2013\Projects\TMesh_2.0\TMesh_2.0\obj\Debug\TMesh_2._0.Properties.Resources.resources
+C:\Users\Sergio\Documents\Visual Studio 2013\Projects\TMesh_2.0\TMesh_2.0\obj\Debug\TMesh_2.0.csproj.GenerateResource.Cache
+C:\Users\Sergio\Documents\Visual Studio 2013\Projects\TMesh_2.0\TMesh_2.0\obj\Debug\TMesh_2.0.exe.licenses
+C:\Users\Sergio\Documents\Visual Studio 2013\Projects\TMesh_2.0\TMesh_2.0\obj\Debug\TMesh_2.0.exe
+C:\Users\Sergio\Documents\Visual Studio 2013\Projects\TMesh_2.0\TMesh_2.0\obj\Debug\TMesh_2.0.pdb
+C:\Users\Sergio\Documents\Visual Studio 2013\Projects\TMesh_2.0\TMesh_2.0\bin\Debug\TMesh_2.0.pdb
+C:\Users\Sergio\Documents\Visual Studio 2013\Projects\TMesh_2.0\TMesh_2.0\obj\Debug\TMesh_2.0.csprojResolveAssemblyReference.cache
