@@ -54,7 +54,7 @@
             this.Board.AutoSwapBuffers = true;
             this.Board.BackColor = System.Drawing.Color.Black;
             this.Board.ColorBits = ((byte)(32));
-            this.Board.DepthBits = ((byte)(16));
+            this.Board.DepthBits = ((byte)(32));
             this.Board.Location = new System.Drawing.Point(12, 64);
             this.Board.Name = "Board";
             this.Board.Size = new System.Drawing.Size(591, 444);
@@ -133,6 +133,7 @@
             this.button3.Size = new System.Drawing.Size(40, 38);
             this.button3.TabIndex = 4;
             this.button3.UseVisualStyleBackColor = true;
+            this.button3.Click += new System.EventHandler(this.ZoomIn);
             // 
             // button4
             // 
@@ -142,6 +143,7 @@
             this.button4.Size = new System.Drawing.Size(36, 37);
             this.button4.TabIndex = 5;
             this.button4.UseVisualStyleBackColor = true;
+            this.button4.Click += new System.EventHandler(this.ZoomOut);
             // 
             // button2
             // 

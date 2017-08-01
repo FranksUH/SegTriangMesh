@@ -20,6 +20,8 @@ namespace TMesh_2._0
         Vertex center;
         Vertex camUp;
 
+        double _factor;
+
         public Form1()
         {
             InitializeComponent();
@@ -33,7 +35,9 @@ namespace TMesh_2._0
 
             camPos = new Vertex(0, 0, 0.5);
             center = new Vertex(0, 0, 0);
-            camUp = new Vertex(0, 1, 0);
+            camUp = new Vertex(0, 0.1, 0);
+
+            _factor = 0;
         }
 
         private void Settings()
@@ -51,6 +55,7 @@ namespace TMesh_2._0
         private void PaintGL(object sender, PaintEventArgs e)
         {
             Settings();
+            Gl.glTranslated(0, 0, _factor);
             DrawLines();
 
         }
@@ -96,7 +101,21 @@ namespace TMesh_2._0
         private void Zoom(double factor)
         {
             camPos = (camPos - center) * factor + center;
+            Board.Invalidate();
         }
+
+        private void ZoomOut(object sender, EventArgs e)
+        {
+            _factor -= 0.1;
+            Board.Invalidate();
+        }
+
+        private void ZoomIn(object sender, EventArgs e)
+        {
+            _factor += 0.1;
+            Board.Invalidate();
+        }
+
 
         private static double NormalizeAngle(double angle)
         {
@@ -135,6 +154,10 @@ namespace TMesh_2._0
         {
             
         }
+
+        
+
+        
 
     }
 }
