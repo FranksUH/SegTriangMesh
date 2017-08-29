@@ -4,9 +4,9 @@ using System.Collections.Generic;
 
 public class Vertex
 {
-    public double X { get; private set; }
-    public double Y { get; private set; }
-    public double Z { get; private set; }
+    public double X { get;  set; }
+    public double Y { get;  set; }
+    public double Z { get;  set; }
     public int he { get;  set; }
 
     public Vertex(double x, double y, double z)

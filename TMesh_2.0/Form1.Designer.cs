@@ -42,7 +42,28 @@
             this.button4 = new System.Windows.Forms.Button();
             this.button2 = new System.Windows.Forms.Button();
             this.button1 = new System.Windows.Forms.Button();
+            this.CampPosLabel = new System.Windows.Forms.Label();
+            this.label2 = new System.Windows.Forms.Label();
+            this.label3 = new System.Windows.Forms.Label();
+            this.camPosX = new System.Windows.Forms.NumericUpDown();
+            this.camPosZ = new System.Windows.Forms.NumericUpDown();
+            this.camPosY = new System.Windows.Forms.NumericUpDown();
+            this.centerX = new System.Windows.Forms.NumericUpDown();
+            this.centerZ = new System.Windows.Forms.NumericUpDown();
+            this.centerY = new System.Windows.Forms.NumericUpDown();
+            this.camUpX = new System.Windows.Forms.NumericUpDown();
+            this.camUpZ = new System.Windows.Forms.NumericUpDown();
+            this.camUpY = new System.Windows.Forms.NumericUpDown();
             this.menuStrip1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.camPosX)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.camPosZ)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.camPosY)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.centerX)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.centerZ)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.centerY)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.camUpX)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.camUpZ)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.camUpY)).BeginInit();
             this.SuspendLayout();
             // 
             // Board
@@ -52,9 +73,9 @@
             this.Board.AutoFinish = false;
             this.Board.AutoMakeCurrent = true;
             this.Board.AutoSwapBuffers = true;
-            this.Board.BackColor = System.Drawing.Color.Black;
+            this.Board.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(64)))));
             this.Board.ColorBits = ((byte)(32));
-            this.Board.DepthBits = ((byte)(32));
+            this.Board.DepthBits = ((byte)(64));
             this.Board.Location = new System.Drawing.Point(12, 64);
             this.Board.Name = "Board";
             this.Board.Size = new System.Drawing.Size(591, 444);
@@ -163,11 +184,231 @@
             this.button1.TabIndex = 2;
             this.button1.UseVisualStyleBackColor = true;
             // 
+            // CampPosLabel
+            // 
+            this.CampPosLabel.AutoSize = true;
+            this.CampPosLabel.Location = new System.Drawing.Point(632, 64);
+            this.CampPosLabel.Name = "CampPosLabel";
+            this.CampPosLabel.Size = new System.Drawing.Size(46, 13);
+            this.CampPosLabel.TabIndex = 6;
+            this.CampPosLabel.Text = "CamPos";
+            // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.Location = new System.Drawing.Point(632, 103);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(38, 13);
+            this.label2.TabIndex = 7;
+            this.label2.Text = "Center";
+            // 
+            // label3
+            // 
+            this.label3.AutoSize = true;
+            this.label3.Location = new System.Drawing.Point(632, 143);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(42, 13);
+            this.label3.TabIndex = 8;
+            this.label3.Text = "CamUp";
+            // 
+            // camPosX
+            // 
+            this.camPosX.DecimalPlaces = 1;
+            this.camPosX.Increment = new decimal(new int[] {
+            5,
+            0,
+            0,
+            65536});
+            this.camPosX.Location = new System.Drawing.Point(692, 62);
+            this.camPosX.Minimum = new decimal(new int[] {
+            100,
+            0,
+            0,
+            -2147483648});
+            this.camPosX.Name = "camPosX";
+            this.camPosX.Size = new System.Drawing.Size(48, 20);
+            this.camPosX.TabIndex = 9;
+            this.camPosX.ValueChanged += new System.EventHandler(this.UpdateCamPosX);
+            // 
+            // camPosZ
+            // 
+            this.camPosZ.DecimalPlaces = 1;
+            this.camPosZ.Increment = new decimal(new int[] {
+            5,
+            0,
+            0,
+            65536});
+            this.camPosZ.Location = new System.Drawing.Point(800, 62);
+            this.camPosZ.Minimum = new decimal(new int[] {
+            100,
+            0,
+            0,
+            -2147483648});
+            this.camPosZ.Name = "camPosZ";
+            this.camPosZ.Size = new System.Drawing.Size(48, 20);
+            this.camPosZ.TabIndex = 9;
+            this.camPosZ.Value = new decimal(new int[] {
+            5,
+            0,
+            0,
+            65536});
+            this.camPosZ.ValueChanged += new System.EventHandler(this.UpdateCamPosZ);
+            // 
+            // camPosY
+            // 
+            this.camPosY.DecimalPlaces = 1;
+            this.camPosY.Increment = new decimal(new int[] {
+            5,
+            0,
+            0,
+            65536});
+            this.camPosY.Location = new System.Drawing.Point(746, 62);
+            this.camPosY.Minimum = new decimal(new int[] {
+            100,
+            0,
+            0,
+            -2147483648});
+            this.camPosY.Name = "camPosY";
+            this.camPosY.Size = new System.Drawing.Size(48, 20);
+            this.camPosY.TabIndex = 9;
+            this.camPosY.ValueChanged += new System.EventHandler(this.UpdateCamPosY);
+            // 
+            // centerX
+            // 
+            this.centerX.DecimalPlaces = 1;
+            this.centerX.Increment = new decimal(new int[] {
+            5,
+            0,
+            0,
+            65536});
+            this.centerX.Location = new System.Drawing.Point(692, 101);
+            this.centerX.Minimum = new decimal(new int[] {
+            100,
+            0,
+            0,
+            -2147483648});
+            this.centerX.Name = "centerX";
+            this.centerX.Size = new System.Drawing.Size(48, 20);
+            this.centerX.TabIndex = 9;
+            this.centerX.ValueChanged += new System.EventHandler(this.UpdateCenterX);
+            // 
+            // centerZ
+            // 
+            this.centerZ.DecimalPlaces = 1;
+            this.centerZ.Increment = new decimal(new int[] {
+            5,
+            0,
+            0,
+            65536});
+            this.centerZ.Location = new System.Drawing.Point(800, 101);
+            this.centerZ.Minimum = new decimal(new int[] {
+            100,
+            0,
+            0,
+            -2147483648});
+            this.centerZ.Name = "centerZ";
+            this.centerZ.Size = new System.Drawing.Size(48, 20);
+            this.centerZ.TabIndex = 9;
+            this.centerZ.ValueChanged += new System.EventHandler(this.UpdateCenterZ);
+            // 
+            // centerY
+            // 
+            this.centerY.DecimalPlaces = 1;
+            this.centerY.Increment = new decimal(new int[] {
+            5,
+            0,
+            0,
+            65536});
+            this.centerY.Location = new System.Drawing.Point(746, 101);
+            this.centerY.Minimum = new decimal(new int[] {
+            100,
+            0,
+            0,
+            -2147483648});
+            this.centerY.Name = "centerY";
+            this.centerY.Size = new System.Drawing.Size(48, 20);
+            this.centerY.TabIndex = 9;
+            this.centerY.ValueChanged += new System.EventHandler(this.UpdateCenterY);
+            // 
+            // camUpX
+            // 
+            this.camUpX.DecimalPlaces = 1;
+            this.camUpX.Increment = new decimal(new int[] {
+            5,
+            0,
+            0,
+            65536});
+            this.camUpX.Location = new System.Drawing.Point(692, 141);
+            this.camUpX.Minimum = new decimal(new int[] {
+            100,
+            0,
+            0,
+            -2147483648});
+            this.camUpX.Name = "camUpX";
+            this.camUpX.Size = new System.Drawing.Size(48, 20);
+            this.camUpX.TabIndex = 9;
+            this.camUpX.ValueChanged += new System.EventHandler(this.UpdateCamUpX);
+            // 
+            // camUpZ
+            // 
+            this.camUpZ.DecimalPlaces = 1;
+            this.camUpZ.Increment = new decimal(new int[] {
+            5,
+            0,
+            0,
+            65536});
+            this.camUpZ.Location = new System.Drawing.Point(800, 141);
+            this.camUpZ.Minimum = new decimal(new int[] {
+            100,
+            0,
+            0,
+            -2147483648});
+            this.camUpZ.Name = "camUpZ";
+            this.camUpZ.Size = new System.Drawing.Size(48, 20);
+            this.camUpZ.TabIndex = 9;
+            this.camUpZ.ValueChanged += new System.EventHandler(this.UpdateCamUpZ);
+            // 
+            // camUpY
+            // 
+            this.camUpY.DecimalPlaces = 1;
+            this.camUpY.Increment = new decimal(new int[] {
+            5,
+            0,
+            0,
+            65536});
+            this.camUpY.Location = new System.Drawing.Point(746, 141);
+            this.camUpY.Minimum = new decimal(new int[] {
+            100,
+            0,
+            0,
+            -2147483648});
+            this.camUpY.Name = "camUpY";
+            this.camUpY.Size = new System.Drawing.Size(48, 20);
+            this.camUpY.TabIndex = 9;
+            this.camUpY.Value = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            this.camUpY.ValueChanged += new System.EventHandler(this.UpdateCamUpY);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1020, 520);
+            this.Controls.Add(this.camUpY);
+            this.Controls.Add(this.centerY);
+            this.Controls.Add(this.camPosY);
+            this.Controls.Add(this.camUpZ);
+            this.Controls.Add(this.centerZ);
+            this.Controls.Add(this.camPosZ);
+            this.Controls.Add(this.camUpX);
+            this.Controls.Add(this.centerX);
+            this.Controls.Add(this.camPosX);
+            this.Controls.Add(this.label3);
+            this.Controls.Add(this.label2);
+            this.Controls.Add(this.CampPosLabel);
             this.Controls.Add(this.button4);
             this.Controls.Add(this.button3);
             this.Controls.Add(this.button2);
@@ -177,9 +418,17 @@
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "Form1";
             this.Text = "TMesh 2.0";
-            this.Scroll += new System.Windows.Forms.ScrollEventHandler(this.wheelEvent);
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.camPosX)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.camPosZ)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.camPosY)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.centerX)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.centerZ)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.centerY)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.camUpX)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.camUpZ)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.camUpY)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -200,6 +449,18 @@
         private System.Windows.Forms.Button button2;
         private System.Windows.Forms.Button button3;
         private System.Windows.Forms.Button button4;
+        private System.Windows.Forms.Label CampPosLabel;
+        private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.NumericUpDown camPosX;
+        private System.Windows.Forms.NumericUpDown camPosZ;
+        private System.Windows.Forms.NumericUpDown camPosY;
+        private System.Windows.Forms.NumericUpDown centerX;
+        private System.Windows.Forms.NumericUpDown centerZ;
+        private System.Windows.Forms.NumericUpDown centerY;
+        private System.Windows.Forms.NumericUpDown camUpX;
+        private System.Windows.Forms.NumericUpDown camUpZ;
+        private System.Windows.Forms.NumericUpDown camUpY;
     }
 }
 
