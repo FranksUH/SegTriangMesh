@@ -54,6 +54,16 @@
             this.camUpX = new System.Windows.Forms.NumericUpDown();
             this.camUpZ = new System.Windows.Forms.NumericUpDown();
             this.camUpY = new System.Windows.Forms.NumericUpDown();
+            this.chBoxShowAxes = new System.Windows.Forms.CheckBox();
+            this.btn_segment = new System.Windows.Forms.Button();
+            this.lblZoom = new System.Windows.Forms.Label();
+            this.scrollZoom = new System.Windows.Forms.HScrollBar();
+            this.panel1 = new System.Windows.Forms.Panel();
+            this.panel2 = new System.Windows.Forms.Panel();
+            this.panel3 = new System.Windows.Forms.Panel();
+            this.lblFar = new System.Windows.Forms.Label();
+            this.lblMid = new System.Windows.Forms.Label();
+            this.lblNear = new System.Windows.Forms.Label();
             this.menuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.camPosX)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.camPosZ)).BeginInit();
@@ -76,13 +86,15 @@
             this.Board.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(64)))));
             this.Board.ColorBits = ((byte)(32));
             this.Board.DepthBits = ((byte)(64));
-            this.Board.Location = new System.Drawing.Point(12, 64);
+            this.Board.Location = new System.Drawing.Point(12, 65);
             this.Board.Name = "Board";
             this.Board.Size = new System.Drawing.Size(591, 444);
             this.Board.StencilBits = ((byte)(0));
             this.Board.TabIndex = 0;
+            this.Board.Scroll += new System.Windows.Forms.ScrollEventHandler(this.Board_Scroll);
             this.Board.Paint += new System.Windows.Forms.PaintEventHandler(this.PaintGL);
-            this.Board.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.Board_KeyPress);
+            this.Board.KeyDown += new System.Windows.Forms.KeyEventHandler(this.Board_KeyDown);
+            this.Board.MouseClick += new System.Windows.Forms.MouseEventHandler(this.Board_MouseClick);
             // 
             // menuStrip1
             // 
@@ -392,11 +404,107 @@
             0});
             this.camUpY.ValueChanged += new System.EventHandler(this.UpdateCamUpY);
             // 
+            // chBoxShowAxes
+            // 
+            this.chBoxShowAxes.AutoSize = true;
+            this.chBoxShowAxes.Location = new System.Drawing.Point(673, 216);
+            this.chBoxShowAxes.Name = "chBoxShowAxes";
+            this.chBoxShowAxes.Size = new System.Drawing.Size(74, 17);
+            this.chBoxShowAxes.TabIndex = 10;
+            this.chBoxShowAxes.Text = "Show axis";
+            this.chBoxShowAxes.UseVisualStyleBackColor = true;
+            this.chBoxShowAxes.CheckedChanged += new System.EventHandler(this.chBoxShowAxes_CheckedChanged);
+            // 
+            // btn_segment
+            // 
+            this.btn_segment.Location = new System.Drawing.Point(673, 271);
+            this.btn_segment.Name = "btn_segment";
+            this.btn_segment.Size = new System.Drawing.Size(96, 36);
+            this.btn_segment.TabIndex = 11;
+            this.btn_segment.Text = "Segmentar";
+            this.btn_segment.UseVisualStyleBackColor = true;
+            this.btn_segment.Click += new System.EventHandler(this.btn_segment_Click);
+            // 
+            // lblZoom
+            // 
+            this.lblZoom.AutoSize = true;
+            this.lblZoom.Location = new System.Drawing.Point(23, 535);
+            this.lblZoom.Name = "lblZoom";
+            this.lblZoom.Size = new System.Drawing.Size(34, 13);
+            this.lblZoom.TabIndex = 12;
+            this.lblZoom.Text = "Zoom";
+            // 
+            // scrollZoom
+            // 
+            this.scrollZoom.AllowDrop = true;
+            this.scrollZoom.Location = new System.Drawing.Point(60, 535);
+            this.scrollZoom.Maximum = 10;
+            this.scrollZoom.Minimum = -10;
+            this.scrollZoom.Name = "scrollZoom";
+            this.scrollZoom.Size = new System.Drawing.Size(469, 18);
+            this.scrollZoom.TabIndex = 13;
+            this.scrollZoom.Scroll += new System.Windows.Forms.ScrollEventHandler(this.scrollZoom_Scroll);
+            // 
+            // panel1
+            // 
+            this.panel1.Location = new System.Drawing.Point(673, 475);
+            this.panel1.Name = "panel1";
+            this.panel1.Size = new System.Drawing.Size(67, 33);
+            this.panel1.TabIndex = 14;
+            // 
+            // panel2
+            // 
+            this.panel2.Location = new System.Drawing.Point(746, 475);
+            this.panel2.Name = "panel2";
+            this.panel2.Size = new System.Drawing.Size(67, 33);
+            this.panel2.TabIndex = 15;
+            // 
+            // panel3
+            // 
+            this.panel3.Location = new System.Drawing.Point(819, 475);
+            this.panel3.Name = "panel3";
+            this.panel3.Size = new System.Drawing.Size(67, 33);
+            this.panel3.TabIndex = 15;
+            // 
+            // lblFar
+            // 
+            this.lblFar.AutoSize = true;
+            this.lblFar.Location = new System.Drawing.Point(703, 456);
+            this.lblFar.Name = "lblFar";
+            this.lblFar.Size = new System.Drawing.Size(0, 13);
+            this.lblFar.TabIndex = 16;
+            // 
+            // lblMid
+            // 
+            this.lblMid.AutoSize = true;
+            this.lblMid.Location = new System.Drawing.Point(769, 456);
+            this.lblMid.Name = "lblMid";
+            this.lblMid.Size = new System.Drawing.Size(0, 13);
+            this.lblMid.TabIndex = 17;
+            // 
+            // lblNear
+            // 
+            this.lblNear.AutoSize = true;
+            this.lblNear.Location = new System.Drawing.Point(848, 456);
+            this.lblNear.Name = "lblNear";
+            this.lblNear.Size = new System.Drawing.Size(0, 13);
+            this.lblNear.TabIndex = 18;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1020, 520);
+            this.ClientSize = new System.Drawing.Size(1020, 577);
+            this.Controls.Add(this.lblNear);
+            this.Controls.Add(this.lblMid);
+            this.Controls.Add(this.lblFar);
+            this.Controls.Add(this.panel3);
+            this.Controls.Add(this.panel2);
+            this.Controls.Add(this.panel1);
+            this.Controls.Add(this.scrollZoom);
+            this.Controls.Add(this.lblZoom);
+            this.Controls.Add(this.btn_segment);
+            this.Controls.Add(this.chBoxShowAxes);
             this.Controls.Add(this.camUpY);
             this.Controls.Add(this.centerY);
             this.Controls.Add(this.camPosY);
@@ -418,6 +526,7 @@
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "Form1";
             this.Text = "TMesh 2.0";
+            this.Load += new System.EventHandler(this.Form1_Load);
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.camPosX)).EndInit();
@@ -461,6 +570,16 @@
         private System.Windows.Forms.NumericUpDown camUpX;
         private System.Windows.Forms.NumericUpDown camUpZ;
         private System.Windows.Forms.NumericUpDown camUpY;
+        private System.Windows.Forms.CheckBox chBoxShowAxes;
+        private System.Windows.Forms.Button btn_segment;
+        private System.Windows.Forms.Label lblZoom;
+        private System.Windows.Forms.HScrollBar scrollZoom;
+        private System.Windows.Forms.Panel panel1;
+        private System.Windows.Forms.Panel panel2;
+        private System.Windows.Forms.Panel panel3;
+        private System.Windows.Forms.Label lblFar;
+        private System.Windows.Forms.Label lblMid;
+        private System.Windows.Forms.Label lblNear;
     }
 }
 
