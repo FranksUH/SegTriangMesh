@@ -178,6 +178,7 @@ public class Mesh
     public double[][] dual_graph_cost { get; private set; }
     public int[,] dual_graph_edges { get; private set; }
     public int[] cluster;
+    public int k;
 
 
     public Mesh()
@@ -213,6 +214,7 @@ public class Mesh
 
             CountVertex = int.Parse(items[0]);
             CountFace = int.Parse(items[1]);
+            k = (int)Math.Log(CountFace);
 
             for (int i = 0; i < CountVertex; i++)
             {
@@ -261,16 +263,16 @@ public class Mesh
         reader.Close();
         CenterAndScale();
     }
-    public void build_dual_graph()
+    public void build_dual_graph(int k)
     {
         this.dual_graph_cost = new double[this.CountFace][];//a lo sumo cada cara tendra 3 adyacentes
         this.dual_graph_edges = new int[this.CountFace, 3];
 
         for (int i = 0; i < this.CountFace; i++)
-            dual_graph_cost[i] = new double[this.CountFace];
+            dual_graph_cost[i] = new double[k];
 
         for (int i = 0; i < this.CountFace; i++)
-            for (int j = 0; j < this.CountFace; j++)
+            for (int j = 0; j < k; j++)
             {
                 if (i == j)
                     this.dual_graph_cost[i][j] = 0;
@@ -284,12 +286,12 @@ public class Mesh
             for (int j = 0; j < adj.Count; j++)
             {
                 dual_graph_edges[i, j] = adj[j];
-                dual_graph_cost[i][adj[j]] = angular_dist(this.faces[i], this.faces[adj[j]]);
+                //dual_graph_cost[i][adj[j]] = angular_dist(this.faces[i], this.faces[adj[j]]);
             }
             for (int j = adj.Count; j < 3; j++)//rellenar con -1 los que no estan
                 dual_graph_edges[i, j] = -1;
         }
-        for (int i = 0; i < this.CountFace; i++)//contrur la matriz de ""Afinidad""
+        for (int i = 0; i < this.CountFace; i++)//contrur la matriz de ""Afinidad""(distancias)
         {
             double[] cost = dijkstra(i);
             for (int j = 0; j < cost.Length; j++)
@@ -322,7 +324,7 @@ public class Mesh
             for (int i = 0; i < 3 && dual_graph_edges[m.Item2, i] != -1; i++)//recorrer los adyacentes
             {
                 int u = m.Item2, v = dual_graph_edges[u, i];
-                if (minCost[v] > minCost[u] + dual_graph_cost[u][ v])//relax
+                if (minCost[v] > minCost[u] + dual_graph_cost[u][v])//relax
                 {
                     pending.Remove(new Tuple<double, int>(minCost[v], v));
                     minCost[v] = minCost[u] + dual_graph_cost[u][ v];
