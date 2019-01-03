@@ -159,40 +159,35 @@ namespace TMesh_2._0
 
             if (main_axis == 1)//x
             {
-                double[] a1 = { root, ymin, zmin };
-                double[] a2 = { root, ymax, zmin };
-                double[] a3 = { root, ymax, zmax };
-                double[] a4 = { root, ymin, zmax };
-                result.Add(a1);
-                result.Add(a2);
-                result.Add(a3);
-                result.Add(a4);
+                result.Add(new double[] { root, ymin, zmin });
+                result.Add(new double[] { root, ymax, zmin });
+                result.Add(new double[] { root, ymax, zmax });
+                result.Add(new double[] { root, ymin, zmax });
+                //added points
+                result.Add(new double[] { root, (ymax+ymin)/2, (zmax+zmin)/2 });
             }
 
             else if (main_axis == 2)//y
             {
-                double[] a1 = { xmin, root, zmin };
-                double[] a2 = { xmax, root, zmin };
-                double[] a3 = { xmax, root, zmax };
-                double[] a4 = { xmin, root, zmax };
-                result.Add(a1);
-                result.Add(a2);
-                result.Add(a3);
-                result.Add(a4);
+                result.Add(new double[] { xmin, root, zmin });
+                result.Add(new double[] { xmax, root, zmin });
+                result.Add(new double[] { xmax, root, zmax });
+                result.Add(new double[] { xmin, root, zmax });
+                //added points
+                result.Add(new double[] { (xmin+xmax)/2, root, (zmin+zmax)/2 });
             }
 
             else//z
             {
-                double[] a1 = { xmin, ymin, root };
-                double[] a2 = { xmax, ymin, root };
-                double[] a3 = { xmax, ymax, root };
-                double[] a4 = { xmin, ymax, root };
-                result.Add(a1);
-                result.Add(a2);
-                result.Add(a3);
-                result.Add(a4);
+                result.Add(new double[] { xmin, ymin, root });
+                result.Add(new double[] { xmax, ymin, root });
+                result.Add(new double[] { xmax, ymax, root });
+                result.Add(new double[] { xmin, ymax, root });
+                //added points
+                result.Add(new double[] { (xmax+xmin)/2, (ymin+ymax)/2, root});
             }
 
+            result.Add(new double[] { (xmin + xmax) / 2, (ymax + ymin) / 2, (zmax + zmin) / 2 });
             return result;
         }
         public List<Tuple<double[],double[]>> GetBBPicture()
@@ -286,7 +281,7 @@ namespace TMesh_2._0
             if (!inside)//si ningun extremo esta, probar con su centro u otros puntos centrales
             {
                 List<double[]> insideP = GetDivision();
-                insideP.Insert(0,CenterOfMass());
+                //insideP.Insert(0,CenterOfMass());
                 i = 0;
                 while (i < insideP.Count && !inside)
                 {
@@ -310,8 +305,5 @@ namespace TMesh_2._0
             }
             return result;
         }
-        public void RestartInside()
-        { this.insideFaces = new List<Face>(); }
-        //TO DO: Eliminar las caras tapadas por otras
     }
 }

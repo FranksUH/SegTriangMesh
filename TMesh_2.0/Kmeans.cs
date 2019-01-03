@@ -64,40 +64,6 @@ namespace TMesh_2._0
             }
             return this.clusters;
         }
-        public void NormalizeData()
-        {
-            double[] sum = new double[rawData[0].Length];//the sum of each index 
-            double[] meanSum = new double[rawData[0].Length];
-            double[] distanceSum = new double[rawData[0].Length];
-
-            for (int i = 0; i < rawData[0].Length; i++)
-            {
-                for (int j = 0; j < rawData.Length; j++)
-                {
-                    sum[i] += rawData[j][i];
-                }
-                //ya calculada la suma del i-esimo indice
-                for (int j = 0; j < rawData.Length; j++)
-                {
-                    meanSum[i] = sum[i] / rawData.Length;
-                }
-                for (int j = 0; j < rawData.Length; j++)
-                {
-                    distanceSum[i] += Math.Pow(rawData[j][i] - meanSum[i], 2);
-                }
-            }
-            for (int i = 0; i < distanceSum.Length; i++)
-            {
-                distanceSum[i] /= rawData.Length;
-            }
-            for (int i = 0; i < rawData.Length; i++)
-            {
-                for (int j = 0; j < rawData[0].Length; j++)
-                {
-                    rawData[i][j] = (rawData[i][j] - meanSum[j]) / distanceSum[j];
-                }
-            }
-        }
         public void UpdateGroups()//reubica a cada vector en el cluster del centroide mas cercano
         {
             for (int j = 0; j < rawData.Length; j++)
@@ -114,8 +80,8 @@ namespace TMesh_2._0
                         index = i;
                     }
                 }
-                if (isCentroid[j] != -1)
-                    index = isCentroid[j];
+                //if (isCentroid[j] != -1)
+                //    index = isCentroid[j];
                 clusters[j] = index;
             }
         }
@@ -123,44 +89,7 @@ namespace TMesh_2._0
         {
             if (centroids == null)//first init centroids
             {
-                centroids = new double[numClusters][];
-                for (int i = 0; i < centroids.Length; i++)
-                    centroids[i] = new double[rawData[0].Length];
-                Random r = new Random();
-                centroids[0] = rawData[r.Next(0, rawData.Length)];
-                double farthest = double.MinValue;//maximo de los minimos de las columnas
-                double[] nearthest = new double[rawData.Length];//minimo de las filas
-                double cost;
-                for (int j = 0; j < rawData.Length; j++)//columna 0
-                {
-                    cost = distance(centroids[0], rawData[j]);
-                    if (cost > farthest)
-                    {
-                        farthest = cost;
-                        centroids[1] = rawData[j];
-                    }
-                    nearthest[j] = cost;
-                }
-                for (int i = 1; i < numClusters; i++)
-                {
-                    for (int k = 0; k < rawData.Length; k++)
-                    {
-                        cost = distance(centroids[i], rawData[k]);
-                        if (cost < nearthest[k])
-                            nearthest[k] = cost;
-                    }
-                    if ((i + 1) < numClusters)//escoger el maximo de entre todas las filas
-                    {
-                        farthest = nearthest[0];//obtener la proxima cara
-                        for (int j = 1; j < rawData.Length; j++)
-                            if (nearthest[j] > farthest)
-                            {
-                                farthest = nearthest[j];
-                                centroids[i + 1] = rawData[j];
-                            }
-                    }
-                }
-                return new Tuple<int, bool>(1, true);
+                throw new Exception("Centroids most be initialized before compute Kmeans");
             }
             double[][] sum = new double[numClusters][];//llevar de cada grupo la suma de sus componentes
             int[] numItems = new int[numClusters];

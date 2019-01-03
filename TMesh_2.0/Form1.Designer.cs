@@ -93,14 +93,14 @@
             // abrirToolStripMenuItem
             // 
             this.abrirToolStripMenuItem.Name = "abrirToolStripMenuItem";
-            this.abrirToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.abrirToolStripMenuItem.Size = new System.Drawing.Size(100, 22);
             this.abrirToolStripMenuItem.Text = "Abrir";
             this.abrirToolStripMenuItem.Click += new System.EventHandler(this.OpenOFF);
             // 
             // salirToolStripMenuItem
             // 
             this.salirToolStripMenuItem.Name = "salirToolStripMenuItem";
-            this.salirToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.salirToolStripMenuItem.Size = new System.Drawing.Size(100, 22);
             this.salirToolStripMenuItem.Text = "Salir";
             this.salirToolStripMenuItem.Click += new System.EventHandler(this.Exit);
             // 
@@ -290,6 +290,7 @@
             this.Board.Paint += new System.Windows.Forms.PaintEventHandler(this.Board_Paint);
             this.Board.KeyDown += new System.Windows.Forms.KeyEventHandler(this.Board_KeyDown);
             this.Board.MouseDown += new System.Windows.Forms.MouseEventHandler(this.Board_MouseDown);
+            this.Board.MouseMove += new System.Windows.Forms.MouseEventHandler(this.Board_MouseMove);
             this.Board.MouseUp += new System.Windows.Forms.MouseEventHandler(this.Board_MouseUp);
             this.Board.Resize += new System.EventHandler(this.Board_Resize);
             // 

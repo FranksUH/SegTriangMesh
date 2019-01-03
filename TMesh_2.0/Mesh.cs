@@ -942,43 +942,43 @@ public class Mesh
     #endregion
     if (Distance == DistanceType.Combined1 || Distance == DistanceType.Combined2)
     {
-            //KMeans km = new KMeans(partitions, angular_dist);
-            //for (int i = 0; i < iterations; i++)
-            //{
-            //    km.Randomize(this.afinityMatrix);
-            //    testCluster = km.Compute(afinityMatrix);
-            //    eval = Evaluate(km, testCluster);
-            //    if (eval < bestEval)
-            //    {
-            //        Array.Copy(testCluster, cluster, cluster.Length);
-            //        bestEval = eval;
-            //    }
-            //}
-            MyKmeans km = new MyKmeans(afinityMatrix, partitions, angular_dist);
-            km.centroids = new double[partitions][];
-            for (int i = 0; i < km.centroids.Length; i++)
-                km.centroids[i] = afinityMatrix[nextIndex[i]];
-            cluster = km.Compute();  //Compute(this.distancesMatrix);
+            KMeans km = new KMeans(partitions, angular_dist);
+            for (int i = 0; i < iterations; i++)
+            {
+                km.Randomize(this.afinityMatrix);
+                testCluster = km.Compute(afinityMatrix);
+                eval = Evaluate(km, testCluster);
+                if (eval < bestEval)
+                {
+                    Array.Copy(testCluster, cluster, cluster.Length);
+                    bestEval = eval;
+                }
+            }
+            //MyKmeans km = new MyKmeans(afinityMatrix, partitions, euclidianDistance);
+            //km.centroids = new double[partitions][];
+            //for (int i = 0; i < km.centroids.Length; i++)
+            //    km.centroids[i] = afinityMatrix[nextIndex[i]];
+            //cluster = km.Compute();  //Compute(this.distancesMatrix);
         }
         else
     {
-            //KMeans km = new KMeans(partitions, angular_dist);
-            //for (int i = 0; i < iterations; i++)
-            //{
-            //    km.Randomize(this.afinityMatrix);
-            //    testCluster = km.Compute(afinityMatrix);
-            //    eval = Evaluate(km, testCluster);
-            //    if (eval < bestEval)
-            //    {
-            //        Array.Copy(testCluster, cluster, cluster.Length);
-            //        bestEval = eval;
-            //    }
-            //}
-            MyKmeans km = new MyKmeans(afinityMatrix, partitions, angular_dist);
-            km.centroids = new double[partitions][];
-            for (int i = 0; i < km.centroids.Length; i++)
-                km.centroids[i] = afinityMatrix[nextIndex[i]];
-            cluster = km.Compute();  //Compute(this.distancesMatrix);
+            KMeans km = new KMeans(partitions, angular_dist);
+            for (int i = 0; i < iterations; i++)
+            {
+                km.Randomize(this.afinityMatrix);
+                testCluster = km.Compute(afinityMatrix);
+                eval = Evaluate(km, testCluster);
+                if (eval < bestEval)
+                {
+                    Array.Copy(testCluster, cluster, cluster.Length);
+                    bestEval = eval;
+                }
+            }
+            //MyKmeans km = new MyKmeans(afinityMatrix, partitions, euclidianDistance);
+            //km.centroids = new double[partitions][];
+            //for (int i = 0; i < km.centroids.Length; i++)
+            //    km.centroids[i] = afinityMatrix[nextIndex[i]];
+            //cluster = km.Compute();  //Compute(this.distancesMatrix);
         }
     }
     private double Evaluate(KMeans km, int[] labels)

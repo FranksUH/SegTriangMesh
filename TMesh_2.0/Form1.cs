@@ -492,7 +492,7 @@ namespace TMesh_2._0
         private void Board_MouseDown(object sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Left)
-            {
+            {                
                 this.lMouseLoc = e.Location;
             }
             if (e.Button == MouseButtons.Right)
@@ -604,6 +604,17 @@ namespace TMesh_2._0
                 this.lblSim.Visible = true;
             }
             this.lblSim.Visible = false;
+        }
+
+        private void Board_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (this.lMouseLoc != null && e.Button == MouseButtons.Left)
+            {
+                this.ry += (e.Location.X - lMouseLoc.X);
+                this.rx += (e.Location.Y - lMouseLoc.Y);
+                Board.Invalidate();
+            }
+            this.lMouseLoc = e.Location;
         }
 
         private void chkLines_CheckedChanged(object sender, EventArgs e)
