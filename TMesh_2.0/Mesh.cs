@@ -77,7 +77,7 @@ public class Mesh
     private List<Face> faces;
     private List<Half_Edge> edges;
     private Dictionary<Tuple<int, int>, int> indexOf;
-    private AABBTree aabb;
+    public AABBTree aabb;
     public double[,] dual_graph_cost { get; private set; }//solo los adyacentes(Nx3)
     public double [,] combined_cost { get; private set; }
     public double[][] distancesMatrix { get; private set; }//NxK de todos a todos
@@ -683,6 +683,7 @@ public class Mesh
     {
         return new Vector((vertexes[f.i].X + vertexes[f.j].X + vertexes[f.k].X) / 3, (vertexes[f.i].Y + vertexes[f.j].Y + vertexes[f.k].Y) / 3, (vertexes[f.i].Z + vertexes[f.j].Z + vertexes[f.k].Z) / 3);
     }
+    #region to calculate volumetric disttance
     public List<Tuple<double[],double[]>> Getbbx()
     {
         if (aabb == null)
@@ -803,12 +804,11 @@ public class Mesh
     public List<Face> TestVisibility(int i,double theta=120)
     {
         aabb = new AABBTree(faces, vertexes, faces.Count/10);
-        //Vector c = Baricenter(i);        
+        //Vector c = Baricenter(i);
         //return RemoveHiddenFaces(theta, FacesAt(i), n, aabb.InsideCone(theta, c, n, faces, vertexes));
         //List<Face>result = aabb.InsideCone(theta, Baricenter(i), GetNormalToFace(faces[i]), faces, vertexes);
-        //return aabb.InsideCone(theta, Baricenter(i), GetNormalToFace(faces[i]), faces, vertexes);
-        //return aabb.InsideCone(theta, Baricenter(i), GetNormalToFace(faces[i]), faces, vertexes);
-        return GetVisibility(i, theta);
+        return aabb.InsideCone(theta, Baricenter(i), GetNormalToFace(faces[i]), faces, vertexes);
+        //return GetVisibility(i, theta);
     }
     public List<Face> GetVisibility(int i, double theta = 120)//NO USA AABB_Tree
     {
@@ -823,6 +823,7 @@ public class Mesh
         result = RemoveHiddenFaces(theta, FacesAt(i), n, result);//tambien elimina las falsas intercepciones
         return result;
     }
+#endregion
     public List<int> adjacent_faces(Face f)
     {
         List<int> adjacents = new List<int>();

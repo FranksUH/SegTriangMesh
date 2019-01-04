@@ -384,7 +384,7 @@ namespace TMesh_2._0
             SetupViewPort();
             Board.Invalidate();
         }
-        private void Board_Paint(object sender, PaintEventArgs e)
+        private void Board_Paint(object sender, PaintEventArgs e)//!!!!!!PAINTER
         {
             Settings();
             if (chBoxShowAxes.Checked)
@@ -393,7 +393,7 @@ namespace TMesh_2._0
             }
             DrawTriangles();
             if(chkLines.Checked)
-                DrawLines();
+                DrawLines();            
             if (showBB)
             {
                 GL.Begin(BeginMode.Lines);
@@ -402,6 +402,24 @@ namespace TMesh_2._0
                 {
                     GL.Vertex3(bbx[i].Item1[0], bbx[i].Item1[1], bbx[i].Item1[2]);
                     GL.Vertex3(bbx[i].Item2[0], bbx[i].Item2[1], bbx[i].Item2[2]);
+                }
+                GL.End();
+            }
+            if (aabbTest.Checked)
+            {
+                GL.Begin(BeginMode.Lines);
+                GL.Color3(Color.Green);
+                double epsilon = 0.1;
+                for (int i = 0; i < mesh.aabb.tests.Count; i++)
+                {
+                    GL.Vertex3(mesh.aabb.tests[i][0]-epsilon, mesh.aabb.tests[i][1], mesh.aabb.tests[i][2]);
+                    GL.Vertex3(mesh.aabb.tests[i][0]+epsilon, mesh.aabb.tests[i][1], mesh.aabb.tests[i][2]);
+
+                    GL.Vertex3(mesh.aabb.tests[i][0], mesh.aabb.tests[i][1]-epsilon, mesh.aabb.tests[i][2]);
+                    GL.Vertex3(mesh.aabb.tests[i][0], mesh.aabb.tests[i][1]+epsilon, mesh.aabb.tests[i][2]);
+
+                    GL.Vertex3(mesh.aabb.tests[i][0], mesh.aabb.tests[i][1], mesh.aabb.tests[i][2]-epsilon);
+                    GL.Vertex3(mesh.aabb.tests[i][0], mesh.aabb.tests[i][1], mesh.aabb.tests[i][2]+epsilon);
                 }
                 GL.End();
             }
@@ -615,6 +633,11 @@ namespace TMesh_2._0
                 Board.Invalidate();
             }
             this.lMouseLoc = e.Location;
+        }
+
+        private void aabbTest_CheckedChanged(object sender, EventArgs e)
+        {
+            Board.Invalidate();
         }
 
         private void chkLines_CheckedChanged(object sender, EventArgs e)

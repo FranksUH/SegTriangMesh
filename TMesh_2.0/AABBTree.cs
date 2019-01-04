@@ -16,11 +16,14 @@ namespace TMesh_2._0
         public int main_axis { get; private set; }
         public double xmin, xmax, ymin, ymax, zmin, zmax, root;
         const double TO_RADIAN = 0.01745329252;
+        public List<double[]> tests;
+
 
         public AABBTree(List<Face>faces,List<Vertex>vertexes ,int elementsInLeaf)
         {
             insideFaces = new List<Face>();
             buildAABB(faces, vertexes, elementsInLeaf);
+            tests = new List<double[]>();
         }
         private void buildAABB(List<Face> faces, List<Vertex> vertexes, int elementsInLeaf)
         {
@@ -164,7 +167,20 @@ namespace TMesh_2._0
                 result.Add(new double[] { root, ymax, zmax });
                 result.Add(new double[] { root, ymin, zmax });
                 //added points
-                result.Add(new double[] { root, (ymax+ymin)/2, (zmax+zmin)/2 });
+                result.Add(new double[] { root, (ymax+ymin)/2, zmax });
+                result.Add(new double[] { root, (ymax + ymin) / 2, zmin });
+                result.Add(new double[] { root, ymax, (zmin + zmax) / 2 });
+                result.Add(new double[] { root, ymin, (zmin + zmax) / 2 });
+                //xmax
+                result.Add(new double[] { xmin, (ymax + ymin) / 2, zmax });
+                result.Add(new double[] { xmin, (ymax + ymin) / 2, zmin });
+                result.Add(new double[] { xmin, ymax, (zmin + zmax) / 2 });
+                result.Add(new double[] { xmin, ymin, (zmin + zmax) / 2 });
+                //xmin
+                result.Add(new double[] { xmax, (ymax + ymin) / 2, zmax });
+                result.Add(new double[] { xmax, (ymax + ymin) / 2, zmin });
+                result.Add(new double[] { xmax, ymax, (zmin + zmax) / 2 });
+                result.Add(new double[] { xmax, ymin, (zmin + zmax) / 2 });
             }
 
             else if (main_axis == 2)//y
@@ -174,7 +190,20 @@ namespace TMesh_2._0
                 result.Add(new double[] { xmax, root, zmax });
                 result.Add(new double[] { xmin, root, zmax });
                 //added points
-                result.Add(new double[] { (xmin+xmax)/2, root, (zmin+zmax)/2 });
+                result.Add(new double[] { (xmin+xmax)/2, root, zmax});
+                result.Add(new double[] { (xmin + xmax)/2, root, zmin });
+                result.Add(new double[] { xmax, root, (zmax +zmin)/2});
+                result.Add(new double[] { xmin, root, (zmax+zmin)/2 });
+                //ymax
+                result.Add(new double[] { (xmin + xmax) / 2, ymax, zmax });
+                result.Add(new double[] { (xmin + xmax) / 2, ymax, zmin });
+                result.Add(new double[] { xmax, ymax, (zmax + zmin) / 2 });
+                result.Add(new double[] { xmin, ymax, (zmax + zmin) / 2 });
+                //ymin
+                result.Add(new double[] { (xmin + xmax) / 2, ymin, zmax });
+                result.Add(new double[] { (xmin + xmax) / 2, ymin, zmin });
+                result.Add(new double[] { xmax, ymin, (zmax + zmin) / 2 });
+                result.Add(new double[] { xmin, ymin, (zmax + zmin) / 2 });
             }
 
             else//z
@@ -184,7 +213,20 @@ namespace TMesh_2._0
                 result.Add(new double[] { xmax, ymax, root });
                 result.Add(new double[] { xmin, ymax, root });
                 //added points
-                result.Add(new double[] { (xmax+xmin)/2, (ymin+ymax)/2, root});
+                result.Add(new double[] { (xmax+xmin)/2, ymax, root});
+                result.Add(new double[] { (xmax + xmin)/2, ymin, root });
+                result.Add(new double[] { xmax, (ymin + ymax)/2, root });
+                result.Add(new double[] { xmin, (ymin + ymax)/2, root });
+                //zmax
+                result.Add(new double[] { (xmax + xmin) / 2, ymax, zmax });
+                result.Add(new double[] { (xmax + xmin) / 2, ymin, zmax });
+                result.Add(new double[] { xmax, (ymin + ymax) / 2, zmax });
+                result.Add(new double[] { xmin, (ymin + ymax) / 2, zmax });
+                //zmin
+                result.Add(new double[] { (xmax + xmin) / 2, ymax, zmin });
+                result.Add(new double[] { (xmax + xmin) / 2, ymin, zmin });
+                result.Add(new double[] { xmax, (ymin + ymax) / 2, zmin });
+                result.Add(new double[] { xmin, (ymin + ymax) / 2, zmin });
             }
 
             result.Add(new double[] { (xmin + xmax) / 2, (ymax + ymin) / 2, (zmax + zmin) / 2 });
@@ -269,28 +311,38 @@ namespace TMesh_2._0
         public List<Face> InsideCone(double theta, Vector center, Vector normal, List<Face> faces, List<Vertex> vertexes)
         {
             List<double[]> extreme = GetExtremes();//un bounding box esta contenido si alguno de sus extremos estan
+            this.tests.AddRange(extreme);
             List<Face> result = new List<Face>();
             bool inside = false;
             int i = 0;
 
-            while (i < extreme.Count && !inside)//eliminar los extremos que no estan en el cono, hasta encontrar el 1ro que si
-            {
-                inside = pointInsideCone(theta, center, normal, new Vertex(extreme[i][0], extreme[i][1], extreme[i][2]));
-                i++;
-            }
-            if (!inside)//si ningun extremo esta, probar con su centro u otros puntos centrales
-            {
-                List<double[]> insideP = GetDivision();
-                //insideP.Insert(0,CenterOfMass());
-                i = 0;
-                while (i < insideP.Count && !inside)
+            //if (isLeaf)
+            //{
+            //    foreach (var item in elements)//guardar                         
+            //        if (pointInsideCone(theta, center, normal, Baricenter(item, vertexes)))
+            //            result.Add(item);
+            //}
+            //else
+            //{
+                while (i < extreme.Count && !inside)//eliminar los extremos que no estan en el cono, hasta encontrar el 1ro que si
                 {
-                    inside = pointInsideCone(theta, center, normal, new Vertex(insideP[i][0], insideP[i][1], insideP[i][2]));
+                    inside = pointInsideCone(theta, center, normal, new Vertex(extreme[i][0], extreme[i][1], extreme[i][2]));
                     i++;
                 }
-            }
-            if (inside)
-            {
+                if (!inside)//si ningun extremo esta, probar con su centro u otros puntos centrales
+                {
+                    List<double[]> insideP = GetDivision();
+                    this.tests.AddRange(insideP);
+                    //insideP.Insert(0,CenterOfMass());
+                    i = 0;
+                    while (i < insideP.Count && !inside)
+                    {
+                        inside = pointInsideCone(theta, center, normal, new Vertex(insideP[i][0], insideP[i][1], insideP[i][2]));
+                        i++;
+                    }
+                }
+                if (inside)
+                {
                 if (isLeaf)
                 {
                     foreach (var item in elements)//guardar                         

@@ -65,6 +65,7 @@
             this.button1 = new System.Windows.Forms.Button();
             this.btnCmp = new System.Windows.Forms.Button();
             this.lblSim = new System.Windows.Forms.Label();
+            this.aabbTest = new System.Windows.Forms.CheckBox();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -173,7 +174,7 @@
             // 
             // btn_segment
             // 
-            this.btn_segment.Location = new System.Drawing.Point(684, 220);
+            this.btn_segment.Location = new System.Drawing.Point(684, 277);
             this.btn_segment.Name = "btn_segment";
             this.btn_segment.Size = new System.Drawing.Size(96, 33);
             this.btn_segment.TabIndex = 11;
@@ -233,7 +234,7 @@
             // lblMid
             // 
             this.lblMid.AutoSize = true;
-            this.lblMid.Location = new System.Drawing.Point(725, 331);
+            this.lblMid.Location = new System.Drawing.Point(725, 388);
             this.lblMid.Name = "lblMid";
             this.lblMid.Size = new System.Drawing.Size(0, 13);
             this.lblMid.TabIndex = 17;
@@ -259,7 +260,7 @@
             // 
             // btnCeldas
             // 
-            this.btnCeldas.Location = new System.Drawing.Point(684, 262);
+            this.btnCeldas.Location = new System.Drawing.Point(684, 319);
             this.btnCeldas.Name = "btnCeldas";
             this.btnCeldas.Size = new System.Drawing.Size(96, 33);
             this.btnCeldas.TabIndex = 20;
@@ -318,7 +319,7 @@
             // 
             // visibilityBtn
             // 
-            this.visibilityBtn.Location = new System.Drawing.Point(684, 301);
+            this.visibilityBtn.Location = new System.Drawing.Point(684, 358);
             this.visibilityBtn.Name = "visibilityBtn";
             this.visibilityBtn.Size = new System.Drawing.Size(96, 33);
             this.visibilityBtn.TabIndex = 25;
@@ -328,7 +329,7 @@
             // 
             // btnBbox
             // 
-            this.btnBbox.Location = new System.Drawing.Point(684, 340);
+            this.btnBbox.Location = new System.Drawing.Point(684, 397);
             this.btnBbox.Name = "btnBbox";
             this.btnBbox.Size = new System.Drawing.Size(96, 33);
             this.btnBbox.TabIndex = 26;
@@ -386,7 +387,7 @@
             // 
             // btnCmp
             // 
-            this.btnCmp.Location = new System.Drawing.Point(684, 379);
+            this.btnCmp.Location = new System.Drawing.Point(684, 436);
             this.btnCmp.Name = "btnCmp";
             this.btnCmp.Size = new System.Drawing.Size(96, 33);
             this.btnCmp.TabIndex = 28;
@@ -397,12 +398,23 @@
             // lblSim
             // 
             this.lblSim.AutoSize = true;
-            this.lblSim.Location = new System.Drawing.Point(646, 430);
+            this.lblSim.Location = new System.Drawing.Point(646, 487);
             this.lblSim.Name = "lblSim";
             this.lblSim.Size = new System.Drawing.Size(35, 13);
             this.lblSim.TabIndex = 29;
             this.lblSim.Text = "label1";
             this.lblSim.Visible = false;
+            // 
+            // aabbTest
+            // 
+            this.aabbTest.AutoSize = true;
+            this.aabbTest.Location = new System.Drawing.Point(684, 200);
+            this.aabbTest.Name = "aabbTest";
+            this.aabbTest.Size = new System.Drawing.Size(104, 17);
+            this.aabbTest.TabIndex = 30;
+            this.aabbTest.Text = "Show AABB test";
+            this.aabbTest.UseVisualStyleBackColor = true;
+            this.aabbTest.CheckedChanged += new System.EventHandler(this.aabbTest_CheckedChanged);
             // 
             // Form1
             // 
@@ -410,6 +422,7 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.ClientSize = new System.Drawing.Size(891, 733);
+            this.Controls.Add(this.aabbTest);
             this.Controls.Add(this.lblSim);
             this.Controls.Add(this.btnCmp);
             this.Controls.Add(this.lblK);
@@ -484,6 +497,7 @@
         private System.Windows.Forms.Label lblK;
         private System.Windows.Forms.Button btnCmp;
         private System.Windows.Forms.Label lblSim;
+        private System.Windows.Forms.CheckBox aabbTest;
     }
 }
 
