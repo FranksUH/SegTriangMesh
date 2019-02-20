@@ -6,8 +6,10 @@ using Accord.Math;
 using Accord.MachineLearning;
 using Accord.Statistics;
 using TMesh_2._0;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.Runtime.Serialization;
 
-
+[Serializable]
 public class Half_Edge
 {
     public int frm { get; private set; }
@@ -56,6 +58,8 @@ public class Matrix
         return result;
     }
 }
+
+[Serializable]
 public class Mesh
 {
 
@@ -105,6 +109,13 @@ public class Mesh
         zMax = -1;
         zMin = -1;
 	}
+    public void Save(string path)
+    {
+        IFormatter format = new BinaryFormatter();
+        Stream s = new FileStream(path, FileMode.OpenOrCreate);
+        format.Serialize(s, this);
+        s.Close();
+    }
     public void LoadOFF(string fileName)
     {
         Name = Cut(fileName);
@@ -174,6 +185,7 @@ public class Mesh
     public void build_dual_graph(int dim1, bool getAll = false, double angular = 0, double geodesic = 0)
     {
         #region Initialize
+        //FilesChat.SendAndOverWrite("build", "0");
         this.dual_graph_cost = new double[this.CountFace, 3];//a lo sumo cada cara tendra 3 adyacentes
         this.dual_graph_edges = new int[this.CountFace, 3];
         if (Distance == DistanceType.Combined1)
@@ -183,7 +195,7 @@ public class Mesh
         }
         this.distancesMatrix = new double[this.CountFace][];
         this.afinityMatrix = new double[this.CountFace][];
-
+        //FilesChat.SendAndOverWrite("build", "1");
         for (int i = 0; i < this.CountFace; i++)
         {
             distancesMatrix[i] = new double[dim1];
@@ -191,11 +203,15 @@ public class Mesh
                 distancesMatrixCombined[i] = new double[dim1];
             afinityMatrix[i] = new double[dim1];
         }
+        //FilesChat.SendAndOverWrite("build", "2");
         #endregion
         #region Precalc
         for (int i = 0; i < this.CountFace; i++)
         {
             List<int> adj = adjacent_faces(this.faces[i]);
+            //double porcent = ((double)(i+1) / (double)CountFace) * 100;
+            //if (porcent > 2)
+            //    FilesChat.SendAndOverWrite("build",porcent.ToString());
             for (int j = 0; j < adj.Count; j++)
             {
                 dual_graph_edges[i, j] = adj[j];
@@ -216,8 +232,8 @@ public class Mesh
                         break;
                     case DistanceType.Combined2:
                         dual_graph_cost[i, j] = (angular_dist(this.faces[i], this.faces[adj[j]]) * angular) + (geodesic_dist(i, adj[j]) * geodesic);
-                        //if ((1 - angular - geodesic) > 0)
-                        //    dual_graph_cost[i, j] += (volumetricDist(i, adj[j]) * (1 - angular - geodesic));
+                        if ((1 - angular - geodesic) > 0)
+                            dual_graph_cost[i, j] += (volumetricDist(i, adj[j]) * (1 - angular - geodesic));
                         break;
                     default:
                         break;
@@ -683,20 +699,18 @@ public class Mesh
     {
         return new Vector((vertexes[f.i].X + vertexes[f.j].X + vertexes[f.k].X) / 3, (vertexes[f.i].Y + vertexes[f.j].Y + vertexes[f.k].Y) / 3, (vertexes[f.i].Z + vertexes[f.j].Z + vertexes[f.k].Z) / 3);
     }
-    #region to calculate volumetric disttance
+    #region to calculate volumetric distance
     public List<Tuple<double[],double[]>> Getbbx()
     {
         if (aabb == null)
-            aabb = new AABBTree(faces, vertexes, CountFace / 10);
+            aabb = new AABBTree(faces, vertexes, getleafSize());
         return aabb.GetBB();
     }
-    public double volumetricDist(int i,int j,double theta=120)//return the volumetric dist betwen i-face and j-face
+    public double volumetricDist(int i,int j,double theta=60)//return the volumetric dist betwen i-face and j-face
     {
         double communArea=0, combinedArea=0;
-        //if (aabb == null)
-        //    aabb = new AABBTree(faces, vertexes, CountFace / 10);
-        Vector n = GetNormalToFace(faces[i]);
-        //List<Face>inside = RemoveHiddenFaces(theta,FacesAt(i),n,aabb.InsideCone(theta, Baricenter(i), n, faces, vertexes));//!!!!!!!!!!!update insideFaces
+        if (aabb == null)
+            aabb = new AABBTree(faces, vertexes, getleafSize());
         List<Face> inside = GetVisibility(i, theta);
         bool[] catched = new bool[CountFace];//1 si la n-esima cara es visible por la cara i
         for (int k = 0; k < inside.Count; k++)
@@ -705,8 +719,6 @@ public class Mesh
             combinedArea += AreaFace(inside[k].index);
         }
         inside.Clear();
-        Vector n2 = GetNormalToFace(faces[j]);
-        //inside = RemoveHiddenFaces(theta,FacesAt(j),n2,aabb.InsideCone(theta, Baricenter(j), n2, faces, vertexes));//!!!!!!!!!!!update insideFaces
         inside = GetVisibility(j, theta);
         for (int k = 0; k < inside.Count; k++)
         {
@@ -721,48 +733,51 @@ public class Mesh
     public List<Face> RemoveHiddenFaces(double theta, Face center, Vector normal, List<Face> insideCone)
     {
         Vector bc = Baricenter(center);
-        QuickSort(insideCone, bc, 0, insideCone.Count - 1);
-        bool[] bad = new bool[insideCone.Count];
+        Vertex c = new Vertex(bc.elements[0], bc.elements[1], bc.elements[2]);
+        QuickSort(insideCone, bc, 0, insideCone.Count - 1);//!!!!!quizas comprobar
+        bool[] good = new bool[CountFace];
 
-        for (int i = 0; i < insideCone.Count-1; i++)
+        for (int i = 0; i < insideCone.Count; i++)//para revizar solo los que estan dentro del cono
+            good[insideCone[i].index] = true;
+
+        #region using AABBTree
+        //for (int i = 0; i < insideCone.Count - 1; i++)//para eliminar los que resultan en la sombra de alguien
+        //{
+        //    if (!good[insideCone[i].index])
+        //        continue;
+        //    List<Face> inside = aabb.InsideShadow(c, insideCone[i], this.vertexes, good);
+        //    for (int j = 0; j < inside.Count; j++)//ya no hace falta
+        //        good[inside[j].index] = false;
+        //}
+        #endregion
+        #region Raw Testing
+        for (int i = 0; i < insideCone.Count - 1; i++)//para eliminar los que resultan en la sombra de alguien
         {
-            if (bad[i])
+            if (!good[insideCone[i].index])
                 continue;
-            Face f = insideCone[i];
-            Vertex c = new Vertex(bc.elements[0], bc.elements[1], bc.elements[2]);
-            Plane p1 = new Plane(c,vertexes[f.i],vertexes[f.j]);
-            Plane p2 = new Plane(c, vertexes[f.j], vertexes[f.k]);
-            Plane p3 = new Plane(c, vertexes[f.k], vertexes[f.i]);
-            double correctSign = p1.Evaluate(c).CompareTo(0);
-            if (p2.Evaluate(c).CompareTo(0) != correctSign)
-                p2.ChangeSign();
-            if (p3.Evaluate(c).CompareTo(0) != correctSign)
-                p3.ChangeSign();
-            for (int j = i+1; j < insideCone.Count; j++)
+            List<Face> inside = aabb.InsideShadow(c, insideCone[i], this.vertexes, good);
+            for (int j = i+1; j < inside.Count; j++)
             {
-                if (bad[j])
-                    continue;
-                Vector toAnalyze = Baricenter(insideCone[j]);
-                Vertex c2 = new Vertex(toAnalyze.elements[0],toAnalyze.elements[1],toAnalyze.elements[2]);
-                double respectP1 = p1.Evaluate(c2).CompareTo(0), respectP2 = p2.Evaluate(c2).CompareTo(0), respectP3 = p3.Evaluate(c2).CompareTo(0);
-                //que los tres tengan el mismo signo y que sea el mismo que un pto interior, como el baricentro del centro + la normal
-                if (respectP1 == correctSign && respectP1 == respectP2 && respectP2 == respectP3)//esta dentro del cono
-                    bad[j] = true;
+                Vector sureInside = Baricenter(inside[i]);
+                Vector testingInside = Baricenter(inside[j]);
+                if (AABBTree.pointInsideShadow(c, insideCone[i],new Vertex(sureInside.elements[0], sureInside.elements[1], sureInside.elements[2]), new Vertex(testingInside.elements[0], testingInside.elements[1], testingInside.elements[2]), this.vertexes))
+                    good[inside[j].index] = false;
             }
         }
+        #endregion
         Vector nc = GetNormalToFace(center);
         for (int i = 0; i < insideCone.Count; i++)
         {
-            if (bad[i])
+            if (!good[insideCone[i].index])
                 continue;
             if (nc.scalar_product(GetNormalToFace(insideCone[i])) > 0)
-                bad[i] = true;
+                good[insideCone[i].index] = false;
         }
         List<Face> result = new List<Face>();
-        for (int i = 0; i < bad.Length; i++)
+        for (int i = 0; i < CountFace; i++)
         {
-            if (!bad[i])
-                result.Add(insideCone[i]);
+            if (good[i])
+                result.Add(FacesAt(i));
         }
         return result;
     }
@@ -801,26 +816,28 @@ public class Mesh
         elements[right] = temp;
         return sindex;
     }
+    int getleafSize()
+    {
+        return faces.Count / 10;
+        //return Math.Min(Math.Max(faces.Count / 100, 1), 50);
+    }
     public List<Face> TestVisibility(int i,double theta=120)
     {
-        aabb = new AABBTree(faces, vertexes, faces.Count/10);
-        //Vector c = Baricenter(i);
-        //return RemoveHiddenFaces(theta, FacesAt(i), n, aabb.InsideCone(theta, c, n, faces, vertexes));
-        //List<Face>result = aabb.InsideCone(theta, Baricenter(i), GetNormalToFace(faces[i]), faces, vertexes);
-        return aabb.InsideCone(theta, Baricenter(i), GetNormalToFace(faces[i]), faces, vertexes);
+        aabb = new AABBTree(faces, vertexes, getleafSize());
+        var n = GetNormalToFace(faces[i]);        
+        List<Face>result = aabb.InsideCone(theta, Baricenter(i), GetNormalToFace(faces[i]), faces, vertexes);
+        var x = RemoveHiddenFaces(theta, FacesAt(i), n, result);
+        return x;
+        //return result;
+        //return aabb.InsideCone(theta, Baricenter(i), GetNormalToFace(faces[i]), faces, vertexes);
         //return GetVisibility(i, theta);
     }
-    public List<Face> GetVisibility(int i, double theta = 120)//NO USA AABB_Tree
+    public List<Face> GetVisibility(int i, double theta = 120)
     {
-        List<Face> result = new List<Face>();
+        //List<Face> result = new List<Face>();
         Vector n = GetNormalToFace(faces[i]);
-        for (int j = 0; j < faces.Count; j++)
-        {
-            Vector bc = Baricenter(j);
-            if (AABBTree.pointInsideCone(theta, Baricenter(i), GetNormalToFace(faces[i]), new Vertex(bc.elements[0], bc.elements[1], bc.elements[2])))
-                result.Add(faces[j]);
-        }
-        result = RemoveHiddenFaces(theta, FacesAt(i), n, result);//tambien elimina las falsas intercepciones
+        List<Face> result = aabb.InsideCone(theta,Baricenter(i),n,faces,vertexes);
+        //result = RemoveHiddenFaces(theta, FacesAt(i), n, result);//tambien elimina las falsas intercepciones
         return result;
     }
 #endregion

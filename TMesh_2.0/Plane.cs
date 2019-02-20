@@ -8,7 +8,7 @@ namespace TMesh_2._0
 {
     public class Plane
     {
-        private double A, B, C, D;
+        public double A, B, C, D;
         public Plane(Vertex v1, Vertex v2, Vertex v3)
         {
             Vector aux1 = new Vector(v2.X - v1.X, v2.Y - v1.Y, v2.Z - v1.Z);

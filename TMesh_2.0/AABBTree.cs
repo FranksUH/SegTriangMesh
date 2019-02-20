@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace TMesh_2._0
 {
+    [Serializable]
     public class AABBTree
     {
         public List<Face> elements { get; private set; }
@@ -176,11 +177,13 @@ namespace TMesh_2._0
                 result.Add(new double[] { xmin, (ymax + ymin) / 2, zmin });
                 result.Add(new double[] { xmin, ymax, (zmin + zmax) / 2 });
                 result.Add(new double[] { xmin, ymin, (zmin + zmax) / 2 });
+                result.Add(new double[] { xmin, (ymax+ymin)/2, (zmin + zmax) / 2 });
                 //xmin
                 result.Add(new double[] { xmax, (ymax + ymin) / 2, zmax });
                 result.Add(new double[] { xmax, (ymax + ymin) / 2, zmin });
                 result.Add(new double[] { xmax, ymax, (zmin + zmax) / 2 });
                 result.Add(new double[] { xmax, ymin, (zmin + zmax) / 2 });
+                result.Add(new double[] { xmax, (ymax + ymin) / 2, (zmax + zmin) / 2 });
             }
 
             else if (main_axis == 2)//y
@@ -199,11 +202,13 @@ namespace TMesh_2._0
                 result.Add(new double[] { (xmin + xmax) / 2, ymax, zmin });
                 result.Add(new double[] { xmax, ymax, (zmax + zmin) / 2 });
                 result.Add(new double[] { xmin, ymax, (zmax + zmin) / 2 });
+                result.Add(new double[] { (xmax+xmin)/2, ymax, (zmax + zmin) / 2 });
                 //ymin
                 result.Add(new double[] { (xmin + xmax) / 2, ymin, zmax });
                 result.Add(new double[] { (xmin + xmax) / 2, ymin, zmin });
                 result.Add(new double[] { xmax, ymin, (zmax + zmin) / 2 });
                 result.Add(new double[] { xmin, ymin, (zmax + zmin) / 2 });
+                result.Add(new double[] { (xmax+xmin)/2, ymin, (zmax + zmin) / 2 });
             }
 
             else//z
@@ -222,11 +227,13 @@ namespace TMesh_2._0
                 result.Add(new double[] { (xmax + xmin) / 2, ymin, zmax });
                 result.Add(new double[] { xmax, (ymin + ymax) / 2, zmax });
                 result.Add(new double[] { xmin, (ymin + ymax) / 2, zmax });
+                result.Add(new double[] { (xmax+xmin)/2, (ymin + ymax) / 2, zmax });
                 //zmin
                 result.Add(new double[] { (xmax + xmin) / 2, ymax, zmin });
                 result.Add(new double[] { (xmax + xmin) / 2, ymin, zmin });
                 result.Add(new double[] { xmax, (ymin + ymax) / 2, zmin });
                 result.Add(new double[] { xmin, (ymin + ymax) / 2, zmin });
+                result.Add(new double[] { (xmax+xmin)/2, (ymin + ymax) / 2, zmin });
             }
 
             result.Add(new double[] { (xmin + xmax) / 2, (ymax + ymin) / 2, (zmax + zmin) / 2 });
@@ -310,20 +317,14 @@ namespace TMesh_2._0
         }
         public List<Face> InsideCone(double theta, Vector center, Vector normal, List<Face> faces, List<Vertex> vertexes)
         {
-            List<double[]> extreme = GetExtremes();//un bounding box esta contenido si alguno de sus extremos estan
-            this.tests.AddRange(extreme);
+            bool inside = IsInterceptedByRay(center, normal);
             List<Face> result = new List<Face>();
-            bool inside = false;
-            int i = 0;
+            if (!inside)
+            {
+                List<double[]> extreme = GetExtremes();//un bounding box esta contenido si alguno de sus extremos estan
+                this.tests.AddRange(extreme);                
 
-            //if (isLeaf)
-            //{
-            //    foreach (var item in elements)//guardar                         
-            //        if (pointInsideCone(theta, center, normal, Baricenter(item, vertexes)))
-            //            result.Add(item);
-            //}
-            //else
-            //{
+                int i = 0;
                 while (i < extreme.Count && !inside)//eliminar los extremos que no estan en el cono, hasta encontrar el 1ro que si
                 {
                     inside = pointInsideCone(theta, center, normal, new Vertex(extreme[i][0], extreme[i][1], extreme[i][2]));
@@ -341,21 +342,163 @@ namespace TMesh_2._0
                         i++;
                     }
                 }
+            }
                 if (inside)
                 {
+                    if (isLeaf)
+                    {
+                        foreach (var item in elements)//guardar
+                        {
+                            if (pointInsideCone(theta, center,normal, Baricenter(item, vertexes)))
+                                result.Add(item);
+                        }
+                    }
+                    else
+                    {
+                        result.AddRange(leftChild.InsideCone(theta, center, normal, faces, vertexes));
+                        result.AddRange(rigthChild.InsideCone(theta, center, normal, faces, vertexes));
+                    }
+                }
+            return result;
+        }
+        public static bool pointInsideShadow(Vertex c, Face f, Vertex auxVert,Vertex point, List<Vertex> vertexes)//auxVert puede ser el baricentro de f
+        {
+            Plane p1 = new Plane(c, vertexes[f.i], vertexes[f.j]);
+            Plane p2 = new Plane(c, vertexes[f.j], vertexes[f.k]);
+            Plane p3 = new Plane(c, vertexes[f.k], vertexes[f.i]);
+            //Plane test = new Plane(new Vertex(-1, 2, 3), new Vertex(6, 0, -2), new Vertex(4, 5, 1));//A=19,B=-11,C=31,D=-52
+            double correctSign = p1.Evaluate(auxVert).CompareTo(0);
+            if (p2.Evaluate(auxVert).CompareTo(0) != correctSign)
+                p2.ChangeSign();
+            if (p3.Evaluate(auxVert).CompareTo(0) != correctSign)
+                p3.ChangeSign();
+            double respectP1 = p1.Evaluate(point).CompareTo(0), respectP2 = p2.Evaluate(point).CompareTo(0), respectP3 = p3.Evaluate(point).CompareTo(0);
+            //que los tres tengan el mismo signo y que sea el mismo que un pto interior, como el baricentro del centro + la normal
+            if (respectP1 == correctSign && respectP1 == respectP2 && respectP2 == respectP3)//esta dentro del cono
+                return true;
+            return false;
+        }
+        public List<Face> InsideShadow(Vertex center, Face f, List<Vertex> vertexes,bool[] analize)
+        {
+            //quizaz lo que parece mas bobo que es por cada una de las otras caras preguntar si esta dentro de la sombra sea mas facil
+
+            Vertex baricenter = Baricenter(f,vertexes);
+            Vector direction = new Vector(baricenter.X-center.X,baricenter.Y-center.Y,baricenter.Z-center.Z);
+            bool inside = IsInterceptedByRay(new Vector(center.X,center.Y,center.Z), direction);
+            List<Face> result = new List<Face>();
+            if (!inside)
+            {
+                List<double[]> extreme = GetExtremes();//un bounding box esta contenido si alguno de sus extremos estan
+                this.tests.AddRange(extreme);
+
+                int i = 0;
+                while (i < extreme.Count && !inside)//eliminar los extremos que no estan en el cono, hasta encontrar el 1ro que si
+                {
+                    inside = pointInsideShadow(center, f,Baricenter(f,vertexes),new Vertex(extreme[i][0], extreme[i][1], extreme[i][2]),vertexes);
+                    i++;
+                }
+                if (!inside)//si ningun extremo esta, probar con su centro u otros puntos centrales
+                {
+                    List<double[]> insideP = GetDivision();
+                    this.tests.AddRange(insideP);
+                    //insideP.Insert(0,CenterOfMass());
+                    i = 0;
+                    while (i < insideP.Count && !inside)
+                    {
+                        inside = pointInsideShadow(center, f, Baricenter(f, vertexes), new Vertex(insideP[i][0], insideP[i][1], insideP[i][2]), vertexes);
+                        i++;
+                    }
+                }
+            }
+            if (inside)
+            {
                 if (isLeaf)
                 {
                     foreach (var item in elements)//guardar                         
-                        if (pointInsideCone(theta, center, normal, Baricenter(item, vertexes)))
+                        if (item.index != f.index && analize[item.index] && pointInsideShadow(center, f, Baricenter(f, vertexes), Baricenter(item, vertexes), vertexes))//un triangulo esta contenido si su baricentro lo esta
+                        {
                             result.Add(item);
+                            analize[item.index] = false;
+                        }
                 }
                 else
                 {
-                    result.AddRange(leftChild.InsideCone(theta, center, normal, faces, vertexes));
-                    result.AddRange(rigthChild.InsideCone(theta, center, normal, faces, vertexes));
+                    result.AddRange(leftChild.InsideShadow(center,f,vertexes,analize));
+                    result.AddRange(rigthChild.InsideShadow(center,f,vertexes,analize));
                 }
             }
             return result;
+        }
+        public bool IsInterceptedByRay(Vector origin, Vector direction)//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        {
+            double tmin = double.MaxValue, tmax = double.MinValue, tymin, tymax, tzmin, tzmax;
+            if (direction.elements[0] == 0)
+            {
+                if (origin.elements[0] < xmin || origin.elements[0] > xmax)
+                    return false;
+            }
+            else
+            {
+                if (direction.elements[0] > 0)
+                {
+                    tmin = (xmin - origin.elements[0]) / direction.elements[0];
+                    tmax = (xmax - origin.elements[0]) / direction.elements[0];
+                }
+                else
+                {
+                    tmax = (xmin - origin.elements[0]) / direction.elements[0];
+                    tmin = (xmax - origin.elements[0]) / direction.elements[0];
+                }
+            }
+            if (direction.elements[1] == 0)
+            {
+                if (origin.elements[1] < ymin || origin.elements[1] > ymax)
+                    return false;
+            }
+            else
+            {
+                if (direction.elements[1] > 0)
+                {
+                    tymin = (ymin - origin.elements[1]) / direction.elements[1];
+                    tymax = (ymax - origin.elements[1]) / direction.elements[1];
+                }
+                else
+                {
+                    tymax = (ymin - origin.elements[1]) / direction.elements[1];
+                    tymin = (ymax - origin.elements[1]) / direction.elements[1];
+                }
+                if ((tmin > tymax) || (tymin > tmax))
+                    return false;
+                if (tymin > tmin)
+                    tmin = tymin;
+                if (tymax < tmax)
+                    tmax = tymax;
+            }
+            if (direction.elements[2] == 0)
+            {
+                if (origin.elements[2] < zmin || origin.elements[2] > zmax)
+                    return false;
+            }
+            else
+            {
+                if (direction.elements[2] > 0)
+                {
+                    tzmin = (zmin - origin.elements[2]) / direction.elements[2];
+                    tzmax = (zmax - origin.elements[2]) / direction.elements[2];
+                }
+                else
+                {
+                    tzmin = (zmax - origin.elements[2]) / direction.elements[2];
+                    tzmax = (zmin - origin.elements[2]) / direction.elements[2];
+                }
+                if ((tmin > tzmax) || (tzmin > tmax))
+                    return false;
+                if (tzmin > tmin)
+                    tmin = tzmin;
+                if (tzmax < tmax)
+                    tmax = tzmax;
+            }
+            return true;
         }
     }
 }

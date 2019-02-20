@@ -18,7 +18,7 @@ namespace TMesh_2._0
         int[] clusters;
         private double tx, ty, tz, rx, ry, rz, scale;
         private Point lMouseLoc;
-        private Color[] colors = { Color.Blue, Color.Red, Color.Green, Color.Gray, Color.Gold, Color.Violet, Color.Cyan, Color.Orange, Color.Lime, Color.Maroon, Color.ForestGreen, Color.DarkCyan };
+        private Color[] colors = { Color.Blue, Color.Red, Color.Green, Color.Gray, Color.Gold, Color.Violet, Color.Cyan, Color.Orange, Color.Lime, Color.Maroon, Color.ForestGreen, Color.DarkCyan,Color.Bisque,Color.Coral,Color.Salmon};
         public compareWith()
         {
             InitializeComponent();

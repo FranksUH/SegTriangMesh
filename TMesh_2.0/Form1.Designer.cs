@@ -32,6 +32,7 @@
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.archivoToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.abrirToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.cargarToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.salirToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.distanciaToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.distanceSelector = new System.Windows.Forms.ToolStripComboBox();
@@ -66,6 +67,8 @@
             this.btnCmp = new System.Windows.Forms.Button();
             this.lblSim = new System.Windows.Forms.Label();
             this.aabbTest = new System.Windows.Forms.CheckBox();
+            this.segPBar = new System.Windows.Forms.ProgressBar();
+            this.lblSegStatus = new System.Windows.Forms.Label();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -86,6 +89,7 @@
             // 
             this.archivoToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.abrirToolStripMenuItem,
+            this.cargarToolStripMenuItem,
             this.salirToolStripMenuItem});
             this.archivoToolStripMenuItem.Name = "archivoToolStripMenuItem";
             this.archivoToolStripMenuItem.Size = new System.Drawing.Size(60, 20);
@@ -94,14 +98,21 @@
             // abrirToolStripMenuItem
             // 
             this.abrirToolStripMenuItem.Name = "abrirToolStripMenuItem";
-            this.abrirToolStripMenuItem.Size = new System.Drawing.Size(100, 22);
+            this.abrirToolStripMenuItem.Size = new System.Drawing.Size(109, 22);
             this.abrirToolStripMenuItem.Text = "Abrir";
             this.abrirToolStripMenuItem.Click += new System.EventHandler(this.OpenOFF);
+            // 
+            // cargarToolStripMenuItem
+            // 
+            this.cargarToolStripMenuItem.Name = "cargarToolStripMenuItem";
+            this.cargarToolStripMenuItem.Size = new System.Drawing.Size(109, 22);
+            this.cargarToolStripMenuItem.Text = "Cargar";
+            this.cargarToolStripMenuItem.Click += new System.EventHandler(this.cargarToolStripMenuItem_Click);
             // 
             // salirToolStripMenuItem
             // 
             this.salirToolStripMenuItem.Name = "salirToolStripMenuItem";
-            this.salirToolStripMenuItem.Size = new System.Drawing.Size(100, 22);
+            this.salirToolStripMenuItem.Size = new System.Drawing.Size(109, 22);
             this.salirToolStripMenuItem.Text = "Salir";
             this.salirToolStripMenuItem.Click += new System.EventHandler(this.Exit);
             // 
@@ -374,6 +385,7 @@
             this.button2.Size = new System.Drawing.Size(40, 38);
             this.button2.TabIndex = 3;
             this.button2.UseVisualStyleBackColor = true;
+            this.button2.Click += new System.EventHandler(this.button2_Click);
             // 
             // button1
             // 
@@ -416,12 +428,32 @@
             this.aabbTest.UseVisualStyleBackColor = true;
             this.aabbTest.CheckedChanged += new System.EventHandler(this.aabbTest_CheckedChanged);
             // 
+            // segPBar
+            // 
+            this.segPBar.Location = new System.Drawing.Point(40, 583);
+            this.segPBar.Name = "segPBar";
+            this.segPBar.Size = new System.Drawing.Size(478, 23);
+            this.segPBar.TabIndex = 31;
+            this.segPBar.Visible = false;
+            // 
+            // lblSegStatus
+            // 
+            this.lblSegStatus.AutoSize = true;
+            this.lblSegStatus.Location = new System.Drawing.Point(60, 625);
+            this.lblSegStatus.Name = "lblSegStatus";
+            this.lblSegStatus.Size = new System.Drawing.Size(76, 13);
+            this.lblSegStatus.TabIndex = 32;
+            this.lblSegStatus.Text = "Building Graph";
+            this.lblSegStatus.Visible = false;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.ClientSize = new System.Drawing.Size(891, 733);
+            this.Controls.Add(this.lblSegStatus);
+            this.Controls.Add(this.segPBar);
             this.Controls.Add(this.aabbTest);
             this.Controls.Add(this.lblSim);
             this.Controls.Add(this.btnCmp);
@@ -498,6 +530,9 @@
         private System.Windows.Forms.Button btnCmp;
         private System.Windows.Forms.Label lblSim;
         private System.Windows.Forms.CheckBox aabbTest;
+        private System.Windows.Forms.ToolStripMenuItem cargarToolStripMenuItem;
+        private System.Windows.Forms.ProgressBar segPBar;
+        private System.Windows.Forms.Label lblSegStatus;
     }
 }
 

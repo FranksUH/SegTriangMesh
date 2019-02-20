@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace TMesh_2._0
 {
+    [Serializable]
     public class Vertex
     {
         public double X { get; set; }

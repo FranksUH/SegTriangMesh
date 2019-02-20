@@ -12,6 +12,8 @@ using OpenTK.Graphics.OpenGL;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Threading;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.Runtime.Serialization;
 
 namespace TMesh_2._0
 {
@@ -127,7 +129,7 @@ namespace TMesh_2._0
             }
             if (this.act_state == Status.Visible)
             {
-                    f = mesh.FacesAt(2);
+                    f = mesh.FacesAt(1);
                     Vector normal = Vector.normal(new Vector(mesh.VertexesAt(f.i).X, mesh.VertexesAt(f.i).Y, mesh.VertexesAt(f.i).Z), new Vector(mesh.VertexesAt(f.j).X, mesh.VertexesAt(f.j).Y, mesh.VertexesAt(f.j).Z), new Vector(mesh.VertexesAt(f.k).X, mesh.VertexesAt(f.k).Y, mesh.VertexesAt(f.k).Z));
                     GL.Normal3(normal.elements[0], normal.elements[1], normal.elements[2]);
                     GL.Color3(Color.Red);
@@ -221,6 +223,8 @@ namespace TMesh_2._0
             GL.Vertex3(0, 0, 10);
 
             GL.End();
+
+            DrawNormal();
         }
         private void DrawNormal()
         {
@@ -300,7 +304,11 @@ namespace TMesh_2._0
                 lblFar.Visible = false;
                 lblMid.Visible = false;
                 lblNear.Visible = false;
-                this.mesh.Segment(s.numGroups,s.numIter,c.angular,c.geodesic,s.K);
+                mesh.Segment(s.numGroups, s.numIter, c.angular, c.geodesic, s.K);
+                //Thread t2 = new Thread(new ThreadStart(() => mesh.Segment(s.numGroups, s.numIter, c.angular, c.geodesic, s.K)));
+                //t2.Start();
+                //updateBar();
+                //t2.Join();
                 this.act_state = Status.segmented;                
                 //mandar a segmentar
                 Board.Invalidate();
@@ -308,6 +316,33 @@ namespace TMesh_2._0
                 this.lblK.Text = "K: " + mesh.K.ToString();
             }
         }
+        //private void segment(int groups,int iter,double angular,double geodesic,int K)
+        //{
+        //    mesh.Segment(groups, iter, angular, geodesic, K);
+        //}
+        private void updateBar()
+        {
+            int readed = 0;
+            this.segPBar.Visible = true;
+            this.lblSegStatus.Visible = true;
+            while (readed <= 99)
+            {
+                try
+                {
+                    readed = int.Parse(FilesChat.ReadLine("build"));
+                    if (readed != -1)
+                    {
+                        this.segPBar.Value = readed;
+                        this.lblSegStatus.Text = readed.ToString();
+                    }
+                }
+                catch
+                { }
+            }
+            this.segPBar.Visible = false;
+            this.lblSegStatus.Visible = false;
+        }
+
         private void Board_MouseClick(object sender, MouseEventArgs e)
         {
             if(e.Button == MouseButtons.Right)
@@ -539,13 +574,14 @@ namespace TMesh_2._0
                 this.ry += (e.Location.X - lMouseLoc.X);
                 this.rx += (e.Location.Y - lMouseLoc.Y);
                 Board.Invalidate();
+                Cursor = Cursors.Default;
             }
         }
 
         private void visibilityBtn_Click(object sender, EventArgs e)
         {
             this.act_state = Status.Visible;
-            this.visibles = mesh.TestVisibility(2,60);
+            this.visibles = mesh.TestVisibility(1,30);
             this.Board.Invalidate();
         }
         private void btnBbox_Click(object sender, EventArgs e)
@@ -586,25 +622,27 @@ namespace TMesh_2._0
 
         private void btnCmp_Click(object sender, EventArgs e)
         {
+            compare();
             //Thread thread = new Thread(compare);
             //thread.Start();
+            //thread.Join();
             //if (!thread.IsAlive)
             //    thread.Interrupt();           
 
             //new Thread(() =>
             //{
-                OpenFileDialog file = new OpenFileDialog();
-                file.Filter = "|*.seg";
-                this.lblInfo.Text = "ThrED";
-                if (file.ShowDialog() == DialogResult.OK)
-                {
-                    int[] other = OpenSEG(file.FileName, mesh.CountFace);
-                    this.lblSim.Text = mesh.compareWith(other).ToString();
-                    this.lblSim.Visible = true;
-                    compareWith c = new compareWith(other, mesh);
-                    c.ShowDialog();
-                }
-                this.lblSim.Visible = false;
+                //OpenFileDialog file = new OpenFileDialog();
+                //file.Filter = "|*.seg";
+                //this.lblInfo.Text = "ThrED";
+                //if (file.ShowDialog() == DialogResult.OK)
+                //{
+                //    int[] other = OpenSEG(file.FileName, mesh.CountFace);
+                //    this.lblSim.Text = mesh.compareWith(other).ToString();
+                //    this.lblSim.Visible = true;
+                //    compareWith c = new compareWith(other, mesh);
+                //    c.ShowDialog();
+                //}
+                //this.lblSim.Visible = false;
             //}).Start();
 
         }
@@ -617,9 +655,12 @@ namespace TMesh_2._0
             {
                 int[] other = OpenSEG(file.FileName, mesh.CountFace);
                 compareWith c = new compareWith(other, mesh);
-                c.ShowDialog();
-                this.lblSim.Text = mesh.compareWith(other).ToString();
-                this.lblSim.Visible = true;
+                MessageBox.Show("Resultado usando Indice de Rand: " + mesh.compareWith(other).ToString());
+                Thread aux = new Thread(() => c.ShowDialog());
+                aux.Start();                
+                //this.lblSim.Text = mesh.compareWith(other).ToString();
+                //this.lblSim.Visible = true;
+                aux.Join();
             }
             this.lblSim.Visible = false;
         }
@@ -628,6 +669,7 @@ namespace TMesh_2._0
         {
             if (this.lMouseLoc != null && e.Button == MouseButtons.Left)
             {
+                Cursor = Cursors.NoMove2D;
                 this.ry += (e.Location.X - lMouseLoc.X);
                 this.rx += (e.Location.Y - lMouseLoc.Y);
                 Board.Invalidate();
@@ -638,6 +680,71 @@ namespace TMesh_2._0
         private void aabbTest_CheckedChanged(object sender, EventArgs e)
         {
             Board.Invalidate();
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            if (mesh.cluster != null)
+            {
+                SaveFileDialog saveFileDialog1 = new SaveFileDialog();
+                saveFileDialog1.Filter = "Segmentation file|*.seg|Binary file|*.bin";
+                saveFileDialog1.Title = "Choose a folder to save the segmentation";
+                if (saveFileDialog1.ShowDialog() == DialogResult.OK)
+                {
+                    if (saveFileDialog1.FileName != "")
+                    {
+                        if (saveFileDialog1.FileName.Contains(".seg"))
+                        {
+                            StreamWriter sw = new StreamWriter(saveFileDialog1.FileName);
+                            for (int i = 0; i < mesh.cluster.Length; i++)
+                                sw.WriteLine(mesh.cluster[i]);
+                            sw.Close();
+                        }
+                        else
+                            mesh.Save(saveFileDialog1.FileName);
+                    }
+                }
+                
+            }
+        }
+
+        private void cargarToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog file = new OpenFileDialog();
+            file.Filter = "Segmentation file|*.seg|Binary file|*.bin";
+
+            if (file.ShowDialog() == DialogResult.OK)
+            {
+                if (file.FileName.Contains(".bin"))
+                {
+                    IFormatter format = new BinaryFormatter();
+                    Stream s = new FileStream(file.FileName, FileMode.Open);
+                    this.mesh = (Mesh)format.Deserialize(s);
+                    s.Close();
+                    if (mesh.cluster != null)
+                        this.act_state = Status.segmented;
+                    Board.Invalidate();
+                }
+                else
+                {
+                    StreamReader sr = new StreamReader(file.FileName);
+                    mesh.cluster = new int[mesh.CountFace];
+                    for (int i = 0; i < mesh.cluster.Length; i++)
+                    {
+                        try
+                        {
+                            mesh.cluster[i] = int.Parse(sr.ReadLine());
+                        }
+                        catch
+                        {
+                            throw new Exception("The file is corrupted or not represent the loaded OFF file");
+                        }
+                    }
+                    sr.Close();
+                    this.act_state = Status.segmented;
+                    Board.Invalidate();
+                }
+            }
         }
 
         private void chkLines_CheckedChanged(object sender, EventArgs e)
