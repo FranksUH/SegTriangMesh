@@ -8,6 +8,7 @@ using Accord.Statistics;
 using TMesh_2._0;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Runtime.Serialization;
+using System.Diagnostics;
 
 [Serializable]
 public class Half_Edge
@@ -61,8 +62,7 @@ public class Matrix
 
 [Serializable]
 public class Mesh
-{
-
+{    
     public enum DistanceType { Angular, Geodesic, Volumetric, Combined1, Combined2 }
     double xMax, xMin, yMax, yMin, zMax, zMin;
     public bool GetAffinity;
@@ -80,8 +80,10 @@ public class Mesh
     private List<Vertex> dual_verts;
     private List<Face> faces;
     private List<Half_Edge> edges;
+    private List<Face>[] cones;
     private Dictionary<Tuple<int, int>, int> indexOf;
     public AABBTree aabb;
+    private Stopwatch crono;
     public double[,] dual_graph_cost { get; private set; }//solo los adyacentes(Nx3)
     public double [,] combined_cost { get; private set; }
     public double[][] distancesMatrix { get; private set; }//NxK de todos a todos
@@ -101,6 +103,7 @@ public class Mesh
         dual_verts = new List<Vertex>();
         this.Distance = DistanceType.Angular;
         this.GetAffinity = true;
+        crono = new Stopwatch();
 
         xMax = -1;
         xMin = -1;
@@ -188,6 +191,8 @@ public class Mesh
         //FilesChat.SendAndOverWrite("build", "0");
         this.dual_graph_cost = new double[this.CountFace, 3];//a lo sumo cada cara tendra 3 adyacentes
         this.dual_graph_edges = new int[this.CountFace, 3];
+        this.cones = new List<Face>[this.CountFace];
+
         if (Distance == DistanceType.Combined1)
         {
             this.combined_cost = new double[this.CountFace, 3];
@@ -198,6 +203,7 @@ public class Mesh
         //FilesChat.SendAndOverWrite("build", "1");
         for (int i = 0; i < this.CountFace; i++)
         {
+            cones[i] = new List<Face>();
             distancesMatrix[i] = new double[dim1];
             if (Distance == DistanceType.Combined1)            
                 distancesMatrixCombined[i] = new double[dim1];
@@ -206,6 +212,14 @@ public class Mesh
         //FilesChat.SendAndOverWrite("build", "2");
         #endregion
         #region Precalc
+        crono.Start();
+        if (Distance == DistanceType.Volumetric || Distance == DistanceType.Combined2)//Get all cones
+        {
+            for (int i = 0; i < CountFace; i++)
+                cones[i] = getCone(i);
+        }
+        crono.Stop();
+        long elapsed = crono.ElapsedMilliseconds / 1000;
         for (int i = 0; i < this.CountFace; i++)
         {
             List<int> adj = adjacent_faces(this.faces[i]);
@@ -215,28 +229,55 @@ public class Mesh
             for (int j = 0; j < adj.Count; j++)
             {
                 dual_graph_edges[i, j] = adj[j];
-                switch (Distance)
+                if (dual_graph_cost[i, j] == 0)
                 {
-                    case DistanceType.Angular:
-                        dual_graph_cost[i, j] = angular_dist(this.faces[i], this.faces[adj[j]]);//indica el costo hacia su j-esima cara adyacente
-                        break;
-                    case DistanceType.Geodesic:
-                        dual_graph_cost[i, j] = geodesic_dist(i, adj[j]);
-                        break;
-                    case DistanceType.Volumetric:
-                        dual_graph_cost[i, j] = volumetricDist(i, adj[j]);
-                        break;
-                    case DistanceType.Combined1:
-                        dual_graph_cost[i, j] = angular_dist(this.faces[i], this.faces[adj[j]]);
-                        combined_cost[i, j] = geodesic_dist(i, adj[j]);
-                        break;
-                    case DistanceType.Combined2:
-                        dual_graph_cost[i, j] = (angular_dist(this.faces[i], this.faces[adj[j]]) * angular) + (geodesic_dist(i, adj[j]) * geodesic);
-                        if ((1 - angular - geodesic) > 0)
-                            dual_graph_cost[i, j] += (volumetricDist(i, adj[j]) * (1 - angular - geodesic));
-                        break;
-                    default:
-                        break;
+                    int indexInAdj = adjacent_faces(faces[adj[j]]).FindIndex(x=>x==i);
+
+                    switch (Distance)
+                    {
+                        case DistanceType.Angular:
+                            {
+                                double cost = angular_dist(this.faces[i], this.faces[adj[j]]);
+                                dual_graph_cost[i, j] = cost;//indica el costo hacia su j-esima cara adyacente
+                                dual_graph_cost[adj[j], indexInAdj] = cost;
+                                break;
+                            }
+                        case DistanceType.Geodesic:
+                            {
+                                double cost = geodesic_dist(i, adj[j]);
+                                dual_graph_cost[i, j] = cost;
+                                dual_graph_cost[adj[j], indexInAdj] = cost;
+                                break;
+                            }
+                        case DistanceType.Volumetric:
+                            {
+                                double cost = volumetricDist(i, adj[j]);
+                                dual_graph_cost[i, j] = cost;
+                                dual_graph_cost[adj[j], indexInAdj] = cost;
+                                break;
+                            }
+                        case DistanceType.Combined1:
+                            {
+                                double angCost = angular_dist(this.faces[i], this.faces[adj[j]]);
+                                double geodesicCost = geodesic_dist(i, adj[j]);
+                                dual_graph_cost[i, j] = angCost;
+                                combined_cost[i, j] = geodesicCost;
+                                dual_graph_cost[adj[j], indexInAdj] = angCost;
+                                combined_cost[adj[j], indexInAdj] = geodesicCost;
+                                break;
+                            }
+                        case DistanceType.Combined2:
+                            {
+                                double cost = (angular_dist(this.faces[i], this.faces[adj[j]]) * angular) + (geodesic_dist(i, adj[j]) * geodesic);
+                                if ((1 - angular - geodesic) > 0)
+                                    cost += (volumetricDist(i, adj[j]) * (1 - angular - geodesic));
+                                dual_graph_cost[i, j] = cost;
+                                dual_graph_cost[adj[j], indexInAdj] = cost;
+                                break;
+                            }
+                        default:
+                            break;
+                    }
                 }
             }
             for (int j = adj.Count; j < 3; j++)//rellenar con -1 los que no estan
@@ -371,6 +412,12 @@ public class Mesh
                 buildAfinity(dim1);
             }
         }
+    }
+    private List<Face> getCone(int i,int theta=60)
+    {
+        if (aabb == null)
+            aabb = new AABBTree(faces, vertexes, getleafSize());
+        return GetVisibility(i, theta);
     }
     public void buildAfinity(int k)
     {
@@ -706,12 +753,10 @@ public class Mesh
             aabb = new AABBTree(faces, vertexes, getleafSize());
         return aabb.GetBB();
     }
-    public double volumetricDist(int i,int j,double theta=60)//return the volumetric dist betwen i-face and j-face
+    public double volumetricDist(int i,int j)//return the volumetric dist betwen i-face and j-face
     {
-        double communArea=0, combinedArea=0;
-        if (aabb == null)
-            aabb = new AABBTree(faces, vertexes, getleafSize());
-        List<Face> inside = GetVisibility(i, theta);
+        double communArea=0, combinedArea=0;        
+        List<Face> inside = cones[i];
         bool[] catched = new bool[CountFace];//1 si la n-esima cara es visible por la cara i
         for (int k = 0; k < inside.Count; k++)
         {
@@ -719,7 +764,7 @@ public class Mesh
             combinedArea += AreaFace(inside[k].index);
         }
         inside.Clear();
-        inside = GetVisibility(j, theta);
+        inside = cones[j];
         for (int k = 0; k < inside.Count; k++)
         {
             double area = AreaFace(inside[k].index);
@@ -755,13 +800,14 @@ public class Mesh
         {
             if (!good[insideCone[i].index])
                 continue;
-            List<Face> inside = aabb.InsideShadow(c, insideCone[i], this.vertexes, good);
-            for (int j = i+1; j < inside.Count; j++)
+            for (int j = i + 1; j < insideCone.Count; j++)
             {
-                Vector sureInside = Baricenter(inside[i]);
-                Vector testingInside = Baricenter(inside[j]);
-                if (AABBTree.pointInsideShadow(c, insideCone[i],new Vertex(sureInside.elements[0], sureInside.elements[1], sureInside.elements[2]), new Vertex(testingInside.elements[0], testingInside.elements[1], testingInside.elements[2]), this.vertexes))
-                    good[inside[j].index] = false;
+                if (!good[insideCone[j].index])
+                    continue;
+                Vector sureInside = Baricenter(insideCone[i]);
+                Vector testingInside = Baricenter(insideCone[j]);
+                if (AABBTree.pointInsideShadow(c, insideCone[i], new Vertex(sureInside.elements[0], sureInside.elements[1], sureInside.elements[2]), new Vertex(testingInside.elements[0], testingInside.elements[1], testingInside.elements[2]), this.vertexes))
+                    good[insideCone[j].index] = false;
             }
         }
         #endregion
@@ -818,7 +864,7 @@ public class Mesh
     }
     int getleafSize()
     {
-        return faces.Count / 10;
+        return faces.Count / 20;
         //return Math.Min(Math.Max(faces.Count / 100, 1), 50);
     }
     public List<Face> TestVisibility(int i,double theta=120)
@@ -836,7 +882,16 @@ public class Mesh
     {
         //List<Face> result = new List<Face>();
         Vector n = GetNormalToFace(faces[i]);
-        List<Face> result = aabb.InsideCone(theta,Baricenter(i),n,faces,vertexes);
+        List<Face> result = new List<Face>();
+        #region Raw Cone calcule
+        //for (int j = 0; j < CountFace; j++)
+        //{
+        //    var b = Baricenter(faces[j]);
+        //    if (AABBTree.pointInsideCone(theta, Baricenter(i), n, new Vertex(b.elements[0], b.elements[1], b.elements[2])))
+        //        result.Add(faces[j]);
+        //}
+        #endregion
+        result = aabb.InsideCone(theta,Baricenter(i),n,faces,vertexes);
         //result = RemoveHiddenFaces(theta, FacesAt(i), n, result);//tambien elimina las falsas intercepciones
         return result;
     }
