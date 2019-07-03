@@ -1,58 +1,38 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-using OpenTK;
+﻿using OpenTK;
 using OpenTK.Graphics.OpenGL;
+using System;
+using System.Collections.Generic;
+using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
-using System.Threading;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Runtime.Serialization;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.Threading;
+using System.Windows.Forms;
 
 namespace TMesh_2._0
 {
-    public partial class Form1 : Form
+    public partial class Application : Form
     {
         Mesh mesh;
         private enum Status { selected, segmented, none, Visible };
         private bool showBB;
         private Status act_state;
-        private double[] r = {1,0,0,1,1,0,0.5,0.1,0.8,0.9 };//10
-        private double[] g = {0,1,0,1,0,1,0.5,0.2,0.6,0.4 };
-        private double[] b = {0,0,1,0,1,1,0.5,0.3,0.4,0.1 };
         private Color[] colors = { Color.Blue, Color.Red,Color.Green,Color.Gray,Color.Gold,Color.Violet,Color.Cyan, Color.Orange, Color.Lime,Color.Maroon,Color.ForestGreen,Color.DarkCyan};
-        private double tx, ty, tz, rx, ry, rz, scale;
+        private double tx, ty, tz, rx, ry, rz, scale; //traslation, rotation and scale factors
         private Point lMouseLoc;
         private List<Tuple<double[], double[]>> bbx;
         private List<Face> visibles;
         private Matrix4 matr;
+        private int NUMFACE = 2; //to calculate distance from NUMFACE to all other faces
 
-        public Form1()
+        public Application()
         {
             InitializeComponent();
             Initialize();
         }
-
-        private void Initialize()//Just for initialize the Form Class
-        {
-            mesh = new Mesh();
-            this.distanceSelector.Text = mesh.Distance.ToString();
-            act_state = Status.none;
-            this.tx = 0;
-            this.ty = 0;
-            this.tz = -10;
-            this.rx = 0;
-            this.ry = 0;
-            this.rz = 0;
-            this.scale = 1;
-            this.showBB = false;
-        }
+        
+        #region OpenTK control methods
         private void SetupViewPort()//Prepare the board to an apropiate image projection
         {
             int w = Board.Width;
@@ -63,7 +43,6 @@ namespace TMesh_2._0
             Matrix4 matrix = Matrix4.Perspective(45.0f, w / h, 1.0f, 100.0f);
             this.matr = matrix;
             GL.LoadMatrix(ref matrix);
-            //GL.Ortho(-w, w, -h, h, -Math.Max(w,h), Math.Max(w,h)); // Bottom-left corner pixel has coordinate (0, 0)
             GL.MatrixMode(MatrixMode.Modelview);    
             GL.Enable(EnableCap.DepthTest);            
         }
@@ -79,8 +58,6 @@ namespace TMesh_2._0
             GL.Enable(EnableCap.Light5);
             GL.Enable(EnableCap.Light6);
             GL.Enable(EnableCap.Light7);
-            //float[] diffuse = {1,1,1 }; 
-            //GL.Light(LightName.Light0, LightParameter.Diffuse,diffuse);
         }
         private void Settings()//Prepare the board to just paint the triangles and lines
         {
@@ -93,11 +70,10 @@ namespace TMesh_2._0
             GL.Rotate(rz, 0, 0, 1);
             GL.Scale(scale, scale, scale);            
         }
-
-        private void DrawLines()
+        private void DrawLines()//to drow lines of the triangles
         {
-            GL.LineWidth(2.0f);
-            GL.Color3(Color.Red);
+            GL.LineWidth(1.0f);
+            GL.Color3(Color.White);
             GL.Begin(BeginMode.Lines);
             Vertex u, v;
 
@@ -114,22 +90,27 @@ namespace TMesh_2._0
         {
             GL.Begin(BeginMode.Triangles);
             Face f;
-            if (this.chkFarest.Checked && this.act_state == Status.segmented)
+            if (this.chkFarest.Checked)//to show the selected pick of the affinity matrix
             {
-                for (int i = 0; i < mesh.partitions; i++)
+                this.act_state = Status.none;
+                try
                 {
-                    f = mesh.FacesAt(mesh.nextIndex[i]);
-                    GL.Color3(Color.White);
-                    Vector normal = Vector.normal(new Vector(mesh.VertexesAt(f.i).X, mesh.VertexesAt(f.i).Y, mesh.VertexesAt(f.i).Z), new Vector(mesh.VertexesAt(f.j).X, mesh.VertexesAt(f.j).Y, mesh.VertexesAt(f.j).Z), new Vector(mesh.VertexesAt(f.k).X, mesh.VertexesAt(f.k).Y, mesh.VertexesAt(f.k).Z));
-                    GL.Normal3(normal.elements[0],normal.elements[1],normal.elements[2]);
-                    GL.Vertex3(mesh.VertexesAt(f.i).X, mesh.VertexesAt(f.i).Y, mesh.VertexesAt(f.i).Z);
-                    GL.Vertex3(mesh.VertexesAt(f.j).X, mesh.VertexesAt(f.j).Y, mesh.VertexesAt(f.j).Z);
-                    GL.Vertex3(mesh.VertexesAt(f.k).X, mesh.VertexesAt(f.k).Y, mesh.VertexesAt(f.k).Z);
+                    for (int i = 0; i < mesh.K; i++)
+                    {
+                        f = mesh.FacesAt(mesh.nextIndex[i]);
+                        GL.Color3(Color.LightGray);
+                        Vector normal = Vector.normal(new Vector(mesh.VertexesAt(f.i).X, mesh.VertexesAt(f.i).Y, mesh.VertexesAt(f.i).Z), new Vector(mesh.VertexesAt(f.j).X, mesh.VertexesAt(f.j).Y, mesh.VertexesAt(f.j).Z), new Vector(mesh.VertexesAt(f.k).X, mesh.VertexesAt(f.k).Y, mesh.VertexesAt(f.k).Z));
+                        GL.Normal3(normal.elements[0], normal.elements[1], normal.elements[2]);
+                        GL.Vertex3(mesh.VertexesAt(f.i).X, mesh.VertexesAt(f.i).Y, mesh.VertexesAt(f.i).Z);
+                        GL.Vertex3(mesh.VertexesAt(f.j).X, mesh.VertexesAt(f.j).Y, mesh.VertexesAt(f.j).Z);
+                        GL.Vertex3(mesh.VertexesAt(f.k).X, mesh.VertexesAt(f.k).Y, mesh.VertexesAt(f.k).Z);
+                    }
                 }
+                catch { }
             }
-            if (this.act_state == Status.Visible)
+            if (this.act_state == Status.Visible)//to show cone of visibility of a given face
             {
-                    f = mesh.FacesAt(1);
+                    f = mesh.FacesAt(NUMFACE);
                     Vector normal = Vector.normal(new Vector(mesh.VertexesAt(f.i).X, mesh.VertexesAt(f.i).Y, mesh.VertexesAt(f.i).Z), new Vector(mesh.VertexesAt(f.j).X, mesh.VertexesAt(f.j).Y, mesh.VertexesAt(f.j).Z), new Vector(mesh.VertexesAt(f.k).X, mesh.VertexesAt(f.k).Y, mesh.VertexesAt(f.k).Z));
                     GL.Normal3(normal.elements[0], normal.elements[1], normal.elements[2]);
                     GL.Color3(Color.Red);
@@ -137,7 +118,7 @@ namespace TMesh_2._0
                     GL.Color3(Color.Green);
                     GL.Vertex3(mesh.VertexesAt(f.j).X, mesh.VertexesAt(f.j).Y, mesh.VertexesAt(f.j).Z);
                     GL.Color3(Color.Blue);
-                    GL.Vertex3(mesh.VertexesAt(f.k).X, mesh.VertexesAt(f.k).Y, mesh.VertexesAt(f.k).Z);
+                    GL.Vertex3(mesh.VertexesAt(f.k).X, mesh.VertexesAt(f.k).Y, mesh.VertexesAt(f.k).Z);                
 
                 foreach (var item in visibles)
                 {
@@ -149,15 +130,28 @@ namespace TMesh_2._0
                     GL.Vertex3(mesh.VertexesAt(f.j).X, mesh.VertexesAt(f.j).Y, mesh.VertexesAt(f.j).Z);
                     GL.Vertex3(mesh.VertexesAt(f.k).X, mesh.VertexesAt(f.k).Y, mesh.VertexesAt(f.k).Z);
                 }
+                if (this.chkTriangles.Checked)
+                {
+                    for (int i = 0; i < mesh.CountFace; i++)
+                    {
+                        f = mesh.FacesAt(i);
+                        GL.Color3(Color.White);
+                        normal = Vector.normal(new Vector(mesh.VertexesAt(f.i).X, mesh.VertexesAt(f.i).Y, mesh.VertexesAt(f.i).Z), new Vector(mesh.VertexesAt(f.j).X, mesh.VertexesAt(f.j).Y, mesh.VertexesAt(f.j).Z), new Vector(mesh.VertexesAt(f.k).X, mesh.VertexesAt(f.k).Y, mesh.VertexesAt(f.k).Z));
+                        GL.Normal3(normal.elements[0], normal.elements[1], normal.elements[2]);
+                        GL.Vertex3(mesh.VertexesAt(f.i).X, mesh.VertexesAt(f.i).Y, mesh.VertexesAt(f.i).Z);
+                        GL.Vertex3(mesh.VertexesAt(f.j).X, mesh.VertexesAt(f.j).Y, mesh.VertexesAt(f.j).Z);
+                        GL.Vertex3(mesh.VertexesAt(f.k).X, mesh.VertexesAt(f.k).Y, mesh.VertexesAt(f.k).Z);
+                    }
+                }
             }
             else
             {
                 for (int i = 0; i < mesh.CountFace; i++)
                 {
                     f = mesh.FacesAt(i);
-                    if (this.act_state == Status.selected)//cuando crezca hacer un switch
+                    if (this.act_state == Status.selected)//to show distances scale to a given Face (in NUMFACE)
                     {
-                        if (i == 2)
+                        if (i == NUMFACE)
                         {
                             Vector normal = Vector.normal(new Vector(mesh.VertexesAt(f.i).X, mesh.VertexesAt(f.i).Y, mesh.VertexesAt(f.i).Z), new Vector(mesh.VertexesAt(f.j).X, mesh.VertexesAt(f.j).Y, mesh.VertexesAt(f.j).Z), new Vector(mesh.VertexesAt(f.k).X, mesh.VertexesAt(f.k).Y, mesh.VertexesAt(f.k).Z));
                             GL.Normal3(normal.elements[0], normal.elements[1], normal.elements[2]);
@@ -170,7 +164,7 @@ namespace TMesh_2._0
                         }
                         else
                         {
-                            double dist = mesh.distancesMatrix[2][i];
+                            double dist = mesh.distancesMatrix[NUMFACE][i];
                             if (dist > 1)
                                 GL.Color3(Color.Red);
                             else GL.Color3(dist, 1 - dist, 0);
@@ -183,9 +177,8 @@ namespace TMesh_2._0
                     }
                     else
                     {
-                        if (this.act_state == Status.segmented)
+                        if (this.act_state == Status.segmented)//after segment paint each triangle of the color of its group
                         {
-                            //GL.Color3(r[mesh.cluster[i]], g[mesh.cluster[i]], b[mesh.cluster[i]]);
                             GL.Color3(colors[mesh.cluster[i]]);//20
                             Vector normal = Vector.normal(new Vector(mesh.VertexesAt(f.i).X, mesh.VertexesAt(f.i).Y, mesh.VertexesAt(f.i).Z), new Vector(mesh.VertexesAt(f.j).X, mesh.VertexesAt(f.j).Y, mesh.VertexesAt(f.j).Z), new Vector(mesh.VertexesAt(f.k).X, mesh.VertexesAt(f.k).Y, mesh.VertexesAt(f.k).Z));
                             GL.Normal3(normal.elements[0], normal.elements[1], normal.elements[2]);
@@ -193,7 +186,7 @@ namespace TMesh_2._0
                             GL.Vertex3(mesh.VertexesAt(f.j).X, mesh.VertexesAt(f.j).Y, mesh.VertexesAt(f.j).Z);
                             GL.Vertex3(mesh.VertexesAt(f.k).X, mesh.VertexesAt(f.k).Y, mesh.VertexesAt(f.k).Z);
                         }
-                        else
+                        else//default style for a triangle
                         {
                             GL.Color3(Color.LightSeaGreen);
                             Vector normal = Vector.normal(new Vector(mesh.VertexesAt(f.i).X, mesh.VertexesAt(f.i).Y, mesh.VertexesAt(f.i).Z), new Vector(mesh.VertexesAt(f.j).X, mesh.VertexesAt(f.j).Y, mesh.VertexesAt(f.j).Z), new Vector(mesh.VertexesAt(f.k).X, mesh.VertexesAt(f.k).Y, mesh.VertexesAt(f.k).Z));
@@ -207,7 +200,7 @@ namespace TMesh_2._0
             }
             GL.End();
         }
-        private void DrawCoords()
+        private void DrawCoords()//to drow coordinate system
         {
             GL.LineWidth(3.0f);
             GL.Color3(Color.Red);
@@ -226,7 +219,7 @@ namespace TMesh_2._0
 
             DrawNormal();
         }
-        private void DrawNormal()
+        private void DrawNormal()//to drow normals to all faces
         {
             GL.LineWidth(3.0f);
             GL.Color3(Color.Red);
@@ -240,7 +233,9 @@ namespace TMesh_2._0
             }
             GL.End();
         }
+        #endregion
 
+        #region File handle methods
         private void OpenOFF(object sender, EventArgs e)
         {
             Initialize();
@@ -262,10 +257,26 @@ namespace TMesh_2._0
                 clusters[i] = int.Parse(reader.ReadLine());
             return clusters;
         }
+        #endregion
+
+        #region Auxiliar methods
+        private void Initialize()//Just for initialize the Form Class
+        {
+            mesh = new Mesh();
+            this.distanceSelector.Text = mesh.Distance.ToString();
+            act_state = Status.none;
+            this.tx = 0;
+            this.ty = 0;
+            this.tz = -10;
+            this.rx = 0;
+            this.ry = 0;
+            this.rz = 0;
+            this.scale = 1;
+            this.showBB = false;
+        }
         private void Zoom(double factor)
         {
             tz += factor;
-            //scale += factor;
             Board.Invalidate();
         }
         private static double NormalizeAngle(double angle)
@@ -273,12 +284,32 @@ namespace TMesh_2._0
             while(angle < 0) angle += 360;
             while(angle >= 360) angle -= 360;
             return angle;
-        }             
+        }
+        private void compare()
+        {
+            OpenFileDialog file = new OpenFileDialog();
+            file.Filter = "|*.seg";
+
+            if (file.ShowDialog() == DialogResult.OK)
+            {
+                int[] other = OpenSEG(file.FileName, mesh.CountFace);
+                MessageBox.Show("Resultado usando Indice de Rand: " + mesh.compareWith(other).ToString() + "\n" + "Resultado usando Indice de Jackard: " + mesh.compareWith(other, false, mesh.partitions));
+                compareWith c = new compareWith(other, mesh);
+                Thread aux = new Thread(() => c.ShowDialog());
+                aux.Start();
+                this.lblSim.Text = mesh.compareWith(other).ToString();
+                this.lblSim.Visible = true;
+                aux.Join();
+            }
+            this.lblSim.Visible = false;
+        }
+        #endregion
+
+        #region Forms control methods
         private void Exit(object sender, EventArgs e)
         {
             this.Close();
-        }       
-
+        }
         private void chBoxShowAxes_CheckedChanged(object sender, EventArgs e)
         {
             Board.Invalidate();
@@ -288,15 +319,15 @@ namespace TMesh_2._0
             SegmentationSettings s = new SegmentationSettings();
             CombinationMenu c = new CombinationMenu();
 
-            Menu:
+        Menu:
             s.ShowDialog();
             if (s.DialogResult == DialogResult.OK)
             {
                 if (this.distanceSelector.SelectedIndex == 4)
                 {
                     c.ShowDialog();
-                    if (c.DialogResult == DialogResult.Cancel || (c.angular==0 && c.geodesic==0))
-                        goto Menu;                    
+                    if (c.DialogResult == DialogResult.Cancel || (c.angular == 0 && c.geodesic == 0))
+                        goto Menu;
                 }
                 panel1.Visible = false;
                 panel2.Visible = false;
@@ -304,45 +335,14 @@ namespace TMesh_2._0
                 lblFar.Visible = false;
                 lblMid.Visible = false;
                 lblNear.Visible = false;
-                mesh.Segment(s.numGroups, s.numIter, c.angular, c.geodesic, s.K);
-                //Thread t2 = new Thread(new ThreadStart(() => mesh.Segment(s.numGroups, s.numIter, c.angular, c.geodesic, s.K)));
-                //t2.Start();
-                //updateBar();
-                //t2.Join();
-                this.act_state = Status.segmented;                
-                //mandar a segmentar
+                int elapsed = mesh.Segment(this.chkHiddenFaces.Checked, s.numGroups, s.numIter, c.angular, c.geodesic, s.K);
+                MessageBox.Show("Segmented in: " + elapsed + " sec");
+                this.act_state = Status.segmented;
                 Board.Invalidate();
                 this.lblK.Visible = true;
                 this.lblK.Text = "K: " + mesh.K.ToString();
             }
         }
-        //private void segment(int groups,int iter,double angular,double geodesic,int K)
-        //{
-        //    mesh.Segment(groups, iter, angular, geodesic, K);
-        //}
-        private void updateBar()
-        {
-            int readed = 0;
-            this.segPBar.Visible = true;
-            this.lblSegStatus.Visible = true;
-            while (readed <= 99)
-            {
-                try
-                {
-                    readed = int.Parse(FilesChat.ReadLine("build"));
-                    if (readed != -1)
-                    {
-                        this.segPBar.Value = readed;
-                        this.lblSegStatus.Text = readed.ToString();
-                    }
-                }
-                catch
-                { }
-            }
-            this.segPBar.Visible = false;
-            this.lblSegStatus.Visible = false;
-        }
-
         private void Board_MouseClick(object sender, MouseEventArgs e)
         {
             if(e.Button == MouseButtons.Right)
@@ -381,13 +381,11 @@ namespace TMesh_2._0
         private void ZoomOut(object sender, EventArgs e)
         {
             Zoom(-3);
-            //Zoom(-0.2);
             Board.Invalidate();
         }
         private void ZoomIn(object sender, EventArgs e)
         {
             Zoom(2);
-            //Zoom(1);
             Board.Invalidate();
         }
         private void scrollZoom_Scroll(object sender, ScrollEventArgs e)
@@ -404,11 +402,8 @@ namespace TMesh_2._0
                 Board.Invalidate();
             }
         }
-
         private void Form1_Load(object sender, EventArgs e)
-        {
-
-        }
+        {}
         private void Board_Load(object sender, EventArgs e)
         {
             SetupViewPort();
@@ -419,7 +414,7 @@ namespace TMesh_2._0
             SetupViewPort();
             Board.Invalidate();
         }
-        private void Board_Paint(object sender, PaintEventArgs e)//!!!!!!PAINTER
+        private void Board_Paint(object sender, PaintEventArgs e)//Method called when invalidate
         {
             Settings();
             if (chBoxShowAxes.Checked)
@@ -550,14 +545,14 @@ namespace TMesh_2._0
             }
             if (e.Button == MouseButtons.Right)
             {
-                mesh.build_dual_graph(mesh.CountFace,true);
+                mesh.build_dual_graph(mesh.CountFace,true,true);
                 this.act_state = Status.selected;
                 panel1.BackColor = Color.FromArgb(255, 0, 0);
                 panel2.BackColor = Color.FromArgb((int)((double)255 * 0.5), (int)((double)255 * 0.5), 0);
                 panel3.BackColor = Color.FromArgb(0, 255, 0);
-                lblFar.Text = "1";
-                lblMid.Text = "0.5";
-                lblNear.Text = "0";
+                lblFar.Text = "Far";
+                lblMid.Text = "Midle";
+                lblNear.Text = "Near";
                 panel1.Visible = true;
                 panel2.Visible = true;
                 panel3.Visible = true;
@@ -577,11 +572,10 @@ namespace TMesh_2._0
                 Cursor = Cursors.Default;
             }
         }
-
         private void visibilityBtn_Click(object sender, EventArgs e)
         {
             this.act_state = Status.Visible;
-            this.visibles = mesh.TestVisibility(1,30);
+            this.visibles = mesh.TestVisibility(NUMFACE, this.chkHiddenFaces.Checked, 60);
             this.Board.Invalidate();
         }
         private void btnBbox_Click(object sender, EventArgs e)
@@ -592,8 +586,7 @@ namespace TMesh_2._0
             this.bbx = mesh.Getbbx();
             this.Board.Invalidate();
         }
-
-        private void button1_Click(object sender, EventArgs e)
+        private void btnSaveImage(object sender, EventArgs e)
         {
             try
             {
@@ -619,52 +612,10 @@ namespace TMesh_2._0
                 throw new Exception("There was an error saving file");
             }
         }
-
         private void btnCmp_Click(object sender, EventArgs e)
         {
             compare();
-            //Thread thread = new Thread(compare);
-            //thread.Start();
-            //thread.Join();
-            //if (!thread.IsAlive)
-            //    thread.Interrupt();           
-
-            //new Thread(() =>
-            //{
-                //OpenFileDialog file = new OpenFileDialog();
-                //file.Filter = "|*.seg";
-                //this.lblInfo.Text = "ThrED";
-                //if (file.ShowDialog() == DialogResult.OK)
-                //{
-                //    int[] other = OpenSEG(file.FileName, mesh.CountFace);
-                //    this.lblSim.Text = mesh.compareWith(other).ToString();
-                //    this.lblSim.Visible = true;
-                //    compareWith c = new compareWith(other, mesh);
-                //    c.ShowDialog();
-                //}
-                //this.lblSim.Visible = false;
-            //}).Start();
-
         }
-        private void compare()
-        {
-            OpenFileDialog file = new OpenFileDialog();
-            file.Filter = "|*.seg";
-
-            if (file.ShowDialog() == DialogResult.OK)
-            {
-                int[] other = OpenSEG(file.FileName, mesh.CountFace);
-                compareWith c = new compareWith(other, mesh);
-                MessageBox.Show("Resultado usando Indice de Rand: " + mesh.compareWith(other).ToString());
-                Thread aux = new Thread(() => c.ShowDialog());
-                aux.Start();                
-                //this.lblSim.Text = mesh.compareWith(other).ToString();
-                //this.lblSim.Visible = true;
-                aux.Join();
-            }
-            this.lblSim.Visible = false;
-        }
-
         private void Board_MouseMove(object sender, MouseEventArgs e)
         {
             if (this.lMouseLoc != null && e.Button == MouseButtons.Left)
@@ -676,13 +627,11 @@ namespace TMesh_2._0
             }
             this.lMouseLoc = e.Location;
         }
-
         private void aabbTest_CheckedChanged(object sender, EventArgs e)
         {
             Board.Invalidate();
         }
-
-        private void button2_Click(object sender, EventArgs e)
+        private void btnSaveSeg(object sender, EventArgs e)
         {
             if (mesh.cluster != null)
             {
@@ -707,7 +656,6 @@ namespace TMesh_2._0
                 
             }
         }
-
         private void cargarToolStripMenuItem_Click(object sender, EventArgs e)
         {
             OpenFileDialog file = new OpenFileDialog();
@@ -746,12 +694,22 @@ namespace TMesh_2._0
                 }
             }
         }
+        private void chkTriangles_CheckedChanged(object sender, EventArgs e)
+        {
+            Board.Invalidate();
+        }
+        private void VolumetricType_TextChanged(object sender, EventArgs e)
+        {
+            throw new Exception("Just testing");
+        }
+        private void chkHiddenFaces_CheckedChanged(object sender, EventArgs e)
+        {
 
+        }
         private void chkLines_CheckedChanged(object sender, EventArgs e)
         {
             Board.Invalidate();
         }
-
         private void distanceSelector_SelectedIndexChanged(object sender, EventArgs e)
         {
             switch (distanceSelector.SelectedIndex)
@@ -783,18 +741,7 @@ namespace TMesh_2._0
         private void chkFarest_CheckedChanged(object sender, EventArgs e)
         {
             Board.Invalidate();
-        }
-        private void btnCeldas_Click(object sender, EventArgs e)
-        {
-            SegmentationSettings s = new SegmentationSettings();
-            s.ShowDialog();
-            if (s.DialogResult == DialogResult.OK)
-            {
-                mesh.Vorinoy(s.numGroups);
-                this.act_state = Status.segmented;
-                Board.Invalidate();
-            }
-        }
+        }        
         private void toolStripMenuItem1_Click(object sender, EventArgs e)
         {
             TestMenu tm = new TestMenu();
@@ -817,5 +764,6 @@ namespace TMesh_2._0
         {
             this.mesh.GetAffinity = !chbJustDistances.Checked;
         }
+        #endregion
     }
 }

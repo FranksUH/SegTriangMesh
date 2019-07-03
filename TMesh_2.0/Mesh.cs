@@ -11,56 +11,6 @@ using System.Runtime.Serialization;
 using System.Diagnostics;
 
 [Serializable]
-public class Half_Edge
-{
-    public int frm { get; private set; }
-    public int dst { get; private set; }
-    public int mate { get; set; }
-
-    public Half_Edge(int from,int _dst, int _mate=-1)
-    {
-        frm = from;
-        dst = _dst;
-        mate = _mate;
-    }
-    public int next(int h)
-    {
-        return (h % 3 == 2) ? h - 2 : h + 1;
-    }
-
-    public int prev(int h)
-    {
-        return (h % 3 == 0) ? h + 2 : h - 1;
-    }
-}
-public class Matrix
-{
-    public double[,] elements;
-    public Matrix(int rows,int cols)
-    {
-        this.elements = new double[rows, cols];
-    }
-    public Matrix matricialProd(Matrix m2)
-    {
-        Matrix result = new Matrix(this.elements.GetLength(0),m2.elements.GetLength(1)); 
-        double sum = 0;
-        for (int i = 0; i < elements.GetLength(0); i++)
-        {
-            for (int j = 0; j < m2.elements.GetLength(1); j++)
-            {
-                sum = 0;
-                for (int z = 0; z < elements.GetLength(1); z++)
-                {
-                    sum += elements[i, z] * m2.elements[z, j];
-                }
-                result.elements[i, j] = sum;
-            }
-        }
-        return result;
-    }
-}
-
-[Serializable]
 public class Mesh
 {    
     public enum DistanceType { Angular, Geodesic, Volumetric, Combined1, Combined2 }
@@ -84,9 +34,9 @@ public class Mesh
     private Dictionary<Tuple<int, int>, int> indexOf;
     public AABBTree aabb;
     private Stopwatch crono;
-    public double[,] dual_graph_cost { get; private set; }//solo los adyacentes(Nx3)
+    public double[,] dual_graph_cost { get; private set; }//just adyacents(Nx3)
     public double [,] combined_cost { get; private set; }
-    public double[][] distancesMatrix { get; private set; }//NxK de todos a todos
+    public double[][] distancesMatrix { get; private set; }//NxK
     public double[][] distancesMatrixCombined { get; private set; }
     public double [][] afinityMatrix { get; set; }
     public int[,] dual_graph_edges { get; private set; }
@@ -112,6 +62,8 @@ public class Mesh
         zMax = -1;
         zMin = -1;
 	}
+
+    #region File Handle
     public void Save(string path)
     {
         IFormatter format = new BinaryFormatter();
@@ -185,11 +137,13 @@ public class Mesh
         reader.Close();
         CenterAndScale();
     }
-    public void build_dual_graph(int dim1, bool getAll = false, double angular = 0, double geodesic = 0)
+    #endregion
+
+    #region General methods for segment
+    public void build_dual_graph(int dim1,bool includeInShadow, bool getAll = false, double angular = 0, double geodesic = 0)
     {
         #region Initialize
-        //FilesChat.SendAndOverWrite("build", "0");
-        this.dual_graph_cost = new double[this.CountFace, 3];//a lo sumo cada cara tendra 3 adyacentes
+        this.dual_graph_cost = new double[this.CountFace, 3];//each face has at most 3 adyacents
         this.dual_graph_edges = new int[this.CountFace, 3];
         this.cones = new List<Face>[this.CountFace];
 
@@ -200,7 +154,6 @@ public class Mesh
         }
         this.distancesMatrix = new double[this.CountFace][];
         this.afinityMatrix = new double[this.CountFace][];
-        //FilesChat.SendAndOverWrite("build", "1");
         for (int i = 0; i < this.CountFace; i++)
         {
             cones[i] = new List<Face>();
@@ -209,23 +162,16 @@ public class Mesh
                 distancesMatrixCombined[i] = new double[dim1];
             afinityMatrix[i] = new double[dim1];
         }
-        //FilesChat.SendAndOverWrite("build", "2");
         #endregion
         #region Precalc
-        crono.Start();
-        if (Distance == DistanceType.Volumetric || Distance == DistanceType.Combined2)//Get all cones
+        if (Distance == DistanceType.Volumetric || (Distance == DistanceType.Combined2 && (angular+geodesic) < 1))//Get all cones
         {
             for (int i = 0; i < CountFace; i++)
-                cones[i] = getCone(i);
+                cones[i] = getCone(i,includeInShadow);
         }
-        crono.Stop();
-        long elapsed = crono.ElapsedMilliseconds / 1000;
         for (int i = 0; i < this.CountFace; i++)
-        {
+        {            
             List<int> adj = adjacent_faces(this.faces[i]);
-            //double porcent = ((double)(i+1) / (double)CountFace) * 100;
-            //if (porcent > 2)
-            //    FilesChat.SendAndOverWrite("build",porcent.ToString());
             for (int j = 0; j < adj.Count; j++)
             {
                 dual_graph_edges[i, j] = adj[j];
@@ -238,7 +184,7 @@ public class Mesh
                         case DistanceType.Angular:
                             {
                                 double cost = angular_dist(this.faces[i], this.faces[adj[j]]);
-                                dual_graph_cost[i, j] = cost;//indica el costo hacia su j-esima cara adyacente
+                                dual_graph_cost[i, j] = cost;
                                 dual_graph_cost[adj[j], indexInAdj] = cost;
                                 break;
                             }
@@ -287,13 +233,15 @@ public class Mesh
         #region Dijkstra
         if (!getAll)
         {
-            #region Rellenar la matriz de distancias con dijkstra tomando una muestra
-            double[] cost = dijkstra(0);
+            #region Get cost to all faces and get the test
+            Random r = new Random();
+            int firstIndex = r.Next(0, dim1); 
+            double[] cost = dijkstra(firstIndex);
             this.nextIndex = new int[dim1];
-            this.nextIndex[0] = 0;
-            double farthest = double.MinValue;//maximo de los minimos de las columnas
-            double[] nearthest = new double[this.CountFace];//minimo de las filas
-            for (int j = 0; j < cost.Length; j++)//columna 0
+            this.nextIndex[firstIndex] = 0;
+            double farthest = double.MinValue;//Max(Min(each col))
+            double[] nearthest = new double[this.CountFace];//Min of each row
+            for (int j = 0; j < cost.Length; j++)//column 0
             {
                 if (cost[j] > farthest)
                 {
@@ -306,16 +254,15 @@ public class Mesh
             for (int i = 1; i < dim1; i++)
             {
                 cost = dijkstra(nextIndex[i]);
-                //cost = dijkstra(i);
-                for (int j = 0; j < cost.Length; j++)//actualizar minimo de cada fila
+                for (int j = 0; j < cost.Length; j++)//update min of each row
                 {
                     if (cost[j] < nearthest[j])
                         nearthest[j] = cost[j];
-                    this.distancesMatrix[j][i] = cost[j];//la distancia del nodo j al i-esimo escogido
+                    this.distancesMatrix[j][i] = cost[j];
                 }
-                if ((i + 1) < dim1)//escoger el maximo de entre todas las filas
+                if ((i + 1) < dim1)//choose max
                 {
-                    farthest = nearthest[0];//obtener la proxima cara
+                    farthest = nearthest[0];//get next face
                     for (int j = 1; j < this.CountFace; j++)
                         if (nearthest[j] > farthest)
                         {
@@ -328,7 +275,6 @@ public class Mesh
             if (Distance == DistanceType.Combined1)
             {
                 double[] cost2 = dijkstra2(0);
-                //this.nextIndex2 = new int[dim1];//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 this.nextIndex[0] = 0;
                 double farthest2 = double.MinValue;//maximo de los minimos de las columnas
                 double[] nearthest2 = new double[this.CountFace];//minimo de las filas
@@ -340,21 +286,20 @@ public class Mesh
                         nextIndex[1] = j;
                     }
                     nearthest2[j] = cost2[j];
-                    this.distancesMatrixCombined[j][0] = cost2[j];//************al revez
+                    this.distancesMatrixCombined[j][0] = cost2[j];
                 }
                 for (int i = 1; i < dim1; i++)
                 {
                     cost2 = dijkstra2(nextIndex[i]);
-                    //cost = dijkstra(i);
-                    for (int j = 0; j < cost2.Length; j++)//actualizar minimo de cada fila
+                    for (int j = 0; j < cost2.Length; j++)
                     {
                         if (cost2[j] < nearthest2[j])
                             nearthest2[j] = cost2[j];
-                        this.distancesMatrixCombined[j][i] = cost2[j];//la distancia del nodo j al i-esimo escogido
+                        this.distancesMatrixCombined[j][i] = cost2[j];
                     }
-                    if ((i + 1) < dim1)//escoger el maximo de entre todas las filas
+                    if ((i + 1) < dim1)
                     {
-                        farthest2 = nearthest2[0];//obtener la proxima cara
+                        farthest2 = nearthest2[0];
                         for (int j = 1; j < this.CountFace; j++)
                             if (nearthest2[j] > farthest2)
                             {
@@ -413,12 +358,6 @@ public class Mesh
             }
         }
     }
-    private List<Face> getCone(int i,int theta=60)
-    {
-        if (aabb == null)
-            aabb = new AABBTree(faces, vertexes, getleafSize());
-        return GetVisibility(i, theta);
-    }
     public void buildAfinity(int k)
     {
         double k_coeficient = 0;
@@ -429,7 +368,7 @@ public class Mesh
                 k_coeficient += distancesMatrix[i][j];
             }
         }
-        k_coeficient /= (k*afinityMatrix.Length);
+        k_coeficient /= (k * afinityMatrix.Length);
         for (int i = 0; i < afinityMatrix.Length; i++)
         {
             for (int j = 0; j < k; j++)
@@ -455,6 +394,251 @@ public class Mesh
             }
         }
     }
+    private void kMeans(int partitions = DEFAULT_CLUSTER_AMOUNT, int iterations = DEFAULT_KMEANS_ITERATION)
+    {
+        cluster = new int[this.CountFace];
+        int[] testCluster = new int[cluster.Length];
+        double eval = double.MaxValue, bestEval = double.MaxValue;
+        if (Distance == DistanceType.Combined1 || Distance == DistanceType.Combined2)
+        {
+            KMeans km = new KMeans(partitions, angular_dist);
+            for (int i = 0; i < iterations; i++)
+            {
+                km.Randomize(this.afinityMatrix);
+                testCluster = km.Compute(afinityMatrix);
+                eval = Evaluate(km, testCluster);
+                if (eval < bestEval)
+                {
+                    Array.Copy(testCluster, cluster, cluster.Length);
+                    bestEval = eval;
+                }
+            }
+            // Uncoment this to use manual Kmeans
+
+            //MyKmeans km = new MyKmeans(afinityMatrix, partitions, euclidianDistance);
+            //km.centroids = new double[partitions][];
+            //for (int i = 0; i < km.centroids.Length; i++)
+            //    km.centroids[i] = afinityMatrix[nextIndex[i]];
+            //cluster = km.Compute();  //Compute(this.distancesMatrix);
+        }
+        else
+        {
+            KMeans km = new KMeans(partitions, angular_dist);
+            for (int i = 0; i < iterations; i++)
+            {
+                km.Randomize(this.afinityMatrix);
+                testCluster = km.Compute(afinityMatrix);
+                eval = Evaluate(km, testCluster);
+                if (eval < bestEval)
+                {
+                    Array.Copy(testCluster, cluster, cluster.Length);
+                    bestEval = eval;
+                }
+            }
+            // Uncoment this to use manual Kmeans
+
+            //MyKmeans km = new MyKmeans(afinityMatrix, partitions, euclidianDistance);
+            //km.centroids = new double[partitions][];
+            //for (int i = 0; i < km.centroids.Length; i++)
+            //    km.centroids[i] = afinityMatrix[nextIndex[i]];
+            //cluster = km.Compute();  //Compute(this.distancesMatrix);
+        }
+    }
+    public int Segment(bool includeInShadow, int partitions = DEFAULT_CLUSTER_AMOUNT, int iterations = DEFAULT_KMEANS_ITERATION, double angular = 0, double geodesic = 0, int K = 0)
+    {
+        crono.Reset();
+        crono.Start();
+        if (buildedGraph == null || buildedGraph.Item1 != Distance || this.afinityMatrix == null || buildedGraph.Item2 != K || buildedGraph.Item3 != angular || buildedGraph.Item4 != geodesic)
+        {
+            int tam = K;
+            if (K == 0)
+            {
+                tam = (int)(0.1 * (double)CountFace);
+                while (tam > 600)
+                    tam /= 10;
+                if (tam < 10)
+                    tam = 10;
+            }
+            build_dual_graph(tam, includeInShadow, false, angular, geodesic);
+            this.K = tam;
+            buildedGraph = new Tuple<DistanceType, int, double, double>(Distance, K, angular, geodesic);
+        }
+        kMeans(partitions, iterations);
+        this.partitions = partitions;
+        crono.Stop();
+        return (int)(crono.ElapsedMilliseconds / 1000);
+    }
+    
+    #endregion
+
+    #region To calculate volumetric distance
+    private List<Face> getCone(int i,bool includeInShadow,int theta=60)
+    {
+        if (aabb == null)
+            aabb = new AABBTree(faces, vertexes, getleafSize());
+        return GetVisibility(i,includeInShadow, theta);
+    }
+    #endregion
+
+    #region To calculate and test geodesic distance
+    public double geodesic_dist(int j, int i)
+    {
+        Face f1 = this.faces[i];
+        Face f2 = this.faces[j];
+        Plane p = new Plane(this.vertexes[f1.i], this.vertexes[f1.j], this.vertexes[f1.k]);
+        int notCommun = f2.i;
+        int common1 = f2.j;
+        int common2 = f2.k;
+        if (f2.j != f1.i && f2.j != f1.j && f2.j != f1.k)
+        {
+            notCommun = f2.j;
+            common1 = f2.i;
+            common2 = f2.k;
+        }
+        if (f2.k != f1.i && f2.k != f1.j && f2.k != f1.k)
+        {
+            notCommun = f2.k;
+            common1 = f2.i;
+            common2 = f2.j;
+        }
+        #region Para rotar y trasladar T2
+        Vector vn1 = new Vector(vertexes[common2].X - vertexes[common1].X, vertexes[common2].Y - vertexes[common1].Y, vertexes[common2].Z - vertexes[common1].Z);
+        vn1.normalize();
+        Vector wn1 = new Vector(vertexes[notCommun].X - vertexes[common1].X, vertexes[notCommun].Y - vertexes[common1].Y, vertexes[notCommun].Z - vertexes[common1].Z);
+        Vector aux = vn1.copy();
+        aux.multiply(aux.scalar_product(wn1));
+        wn1.elements[0] = wn1.elements[0] - aux.elements[0];
+        wn1.elements[1] = wn1.elements[1] - aux.elements[1];
+        wn1.elements[2] = wn1.elements[2] - aux.elements[2];
+        wn1.normalize();
+        TMesh_2._0.Matrix t0 = new TMesh_2._0.Matrix(4, 4);
+        t0.elements[0, 0] = 1;
+        t0.elements[1, 1] = 1;
+        t0.elements[2, 2] = 1;
+        t0.elements[0, 3] = -1 * vertexes[common1].X;
+        t0.elements[1, 3] = -1 * vertexes[common1].Y;
+        t0.elements[2, 3] = -1 * vertexes[common1].Z;
+        t0.elements[3, 3] = 1;
+        TMesh_2._0.Matrix r1 = new TMesh_2._0.Matrix(4, 4);
+        r1.elements[0, 0] = vn1.elements[0];
+        r1.elements[0, 1] = vn1.elements[1];
+        r1.elements[0, 2] = vn1.elements[2];
+        r1.elements[1, 0] = wn1.elements[0];
+        r1.elements[1, 1] = wn1.elements[1];
+        r1.elements[1, 2] = wn1.elements[2];
+        Vector toGetNormal = new Vector(vertexes[common2].X - vertexes[common1].X, vertexes[common2].Y - vertexes[common1].Y, vertexes[common2].Z - vertexes[common1].Z);
+        toGetNormal = toGetNormal.vectorial_product(new Vector(vertexes[notCommun].X - vertexes[common1].X, vertexes[notCommun].Y - vertexes[common1].Y, vertexes[notCommun].Z - vertexes[common1].Z));
+        toGetNormal.normalize();
+        r1.elements[2, 0] = toGetNormal.elements[0];
+        r1.elements[2, 1] = toGetNormal.elements[1];
+        r1.elements[2, 2] = toGetNormal.elements[2];
+        r1.elements[3, 3] = 1;
+        TMesh_2._0.Matrix toProyect = new TMesh_2._0.Matrix(4, 1);
+        toProyect.elements[0, 0] = vertexes[notCommun].X;
+        toProyect.elements[1, 0] = vertexes[notCommun].Y;
+        toProyect.elements[2, 0] = vertexes[notCommun].Z;
+        toProyect.elements[3, 0] = 1;
+        TMesh_2._0.Matrix m1 = r1.matricialProd(t0);
+        TMesh_2._0.Matrix projection2 = m1.matricialProd(toProyect);
+
+        Vector L = new Vector(vertexes[common2].X - vertexes[common1].X, vertexes[common2].Y - vertexes[common1].Y, vertexes[common2].Z - vertexes[common1].Z);
+        Vertex baricenter2 = new Vertex((L.norm() + projection2.elements[0, 0]) / 3, projection2.elements[1, 0] / 3, 0);
+        #endregion
+        #region Para rotar y trasladar T1
+        int notCommun2 = f1.i;
+        if (f1.j != f2.i && f1.j != f2.j && f1.j != f2.k)
+            notCommun2 = f1.j;
+        if (f1.k != f2.i && f1.k != f2.j && f1.k != f2.k)
+            notCommun2 = f1.k;
+        Vector wn2 = new Vector(vertexes[notCommun2].X - vertexes[common1].X, vertexes[notCommun2].Y - vertexes[common1].Y, vertexes[notCommun2].Z - vertexes[common1].Z);
+        Vector aux2 = vn1.copy();
+        aux2.multiply(aux2.scalar_product(wn2));
+        wn2.elements[0] = wn2.elements[0] - aux2.elements[0];
+        wn2.elements[1] = wn2.elements[1] - aux2.elements[1];
+        wn2.elements[2] = wn2.elements[2] - aux2.elements[2];
+        wn2.normalize();
+        TMesh_2._0.Matrix r2 = new TMesh_2._0.Matrix(4, 4);
+        r2.elements[0, 0] = vn1.elements[0];
+        r2.elements[0, 1] = vn1.elements[1];
+        r2.elements[0, 2] = vn1.elements[2];
+        r2.elements[1, 0] = wn2.elements[0];
+        r2.elements[1, 1] = wn2.elements[1];
+        r2.elements[1, 2] = wn2.elements[2];
+        Vector toGetNormal2 = new Vector(vertexes[common2].X - vertexes[common1].X, vertexes[common2].Y - vertexes[common1].Y, vertexes[common2].Z - vertexes[common1].Z);
+        toGetNormal2 = toGetNormal2.vectorial_product(new Vector(vertexes[notCommun2].X - vertexes[common1].X, vertexes[notCommun2].Y - vertexes[common1].Y, vertexes[notCommun2].Z - vertexes[common1].Z));
+        toGetNormal2.normalize();
+        r2.elements[2, 0] = toGetNormal2.elements[0];
+        r2.elements[2, 1] = toGetNormal2.elements[1];
+        r2.elements[2, 2] = toGetNormal2.elements[2];
+        r2.elements[3, 3] = 1;
+        TMesh_2._0.Matrix toProyect2 = new TMesh_2._0.Matrix(4, 1);
+        toProyect2.elements[0, 0] = vertexes[notCommun2].X;
+        toProyect2.elements[1, 0] = vertexes[notCommun2].Y;
+        toProyect2.elements[2, 0] = vertexes[notCommun2].Z;
+        toProyect2.elements[3, 0] = 1;
+        TMesh_2._0.Matrix m2 = r2.matricialProd(t0);
+        TMesh_2._0.Matrix projection1 = m2.matricialProd(toProyect2);
+        if (projection1.elements[1, 0] * projection2.elements[1, 0] > 0)//cambio el <
+            projection1.elements[1, 0] *= -1;
+        Vertex baricenter1 = new Vertex((L.norm() + projection1.elements[0, 0]) / 3, projection1.elements[1, 0] / 3, 0);
+        #endregion
+        double interception = L.norm() / 3 + (projection1.elements[1, 0] * projection2.elements[0, 0] - projection2.elements[1, 0] * projection1.elements[0, 0]) / (3 * (projection1.elements[1, 0] - projection2.elements[1, 0]));
+        if (interception >= 0 && interception <= L.norm())
+        {
+            Vector v = new Vector(baricenter1.X - baricenter2.X, baricenter1.Y - baricenter2.Y, baricenter1.Z - baricenter2.Z);
+            return v.norm();
+        }
+        else
+        {
+            if (interception < 0)
+            {
+                Vector v1 = new Vector(baricenter1.X, baricenter1.Y, baricenter1.Z);
+                Vector v2 = new Vector(baricenter2.X, baricenter2.Y, baricenter2.Z);
+                return v1.norm() + v2.norm();
+            }
+            else
+            {
+                Vector v = new Vector((projection1.elements[0, 0] - 2 * L.norm()) / 3, projection1.elements[1, 0] / 3, 0);
+                Vector w = new Vector((projection2.elements[0, 0] - 2 * L.norm()) / 3, projection2.elements[1, 0] / 3, 0);
+                return v.norm() + w.norm();
+            }
+        }
+    }
+    public double testGeodesic(Face t1, Face t2, List<Vertex> v)
+    {
+        this.vertexes = v;
+        this.faces = new List<Face>();
+        faces.Add(t1);
+        faces.Add(t2);
+        return geodesic_dist(0, 1);
+    }
+    #endregion
+
+    #region To calculate angular distance
+    public double angular_dist(Face f1, Face f2)
+    {
+        return angular_dist(GetNormalToFace(f1), GetNormalToFace(f2));
+    }
+    public double angular_dist(Vector v1, Vector v2)
+    {
+        return (1 - v1.cos(v2)) / 2;
+    }
+    public double angular_dist(double[] a, double[] b)//for K-means
+    {
+        double scalarProd = 0, normA = 0, normB = 0;
+        for (int i = 0; i < a.Length; i++)
+        {
+            scalarProd += a[i] * b[i];
+            normA += a[i] * a[i];
+            normB += b[i] * b[i];
+        }
+        normA = Math.Sqrt(normA);
+        normB = Math.Sqrt(normB);
+        return (1 - (scalarProd / (normA * normB))) / 2;
+    }
+    #endregion
+
+    #region Auxiliar methods for segment
     public double getMaxGeo(int j)
     {
         double max = double.MinValue;
@@ -548,179 +732,6 @@ public class Mesh
         }
         return minCost;
     }
-    public double testGeodesic(Face t1, Face t2,List<Vertex>v)
-    {
-        this.vertexes = v;
-        this.faces = new List<Face>();
-        faces.Add(t1);
-        faces.Add(t2);
-        return geodesic_dist(0, 1);
-    }
-    public double geodesic_dist(int j,int i)
-    {
-        Face f1 = this.faces[i];
-        Face f2 = this.faces[j];
-        Plane p = new Plane(this.vertexes[f1.i], this.vertexes[f1.j], this.vertexes[f1.k]);
-        int notCommun = f2.i;
-        int common1 = f2.j;
-        int common2 = f2.k;
-        if (f2.j != f1.i && f2.j != f1.j && f2.j != f1.k)
-        {
-            notCommun = f2.j;
-            common1 = f2.i;
-            common2 = f2.k;
-        }
-        if (f2.k != f1.i && f2.k != f1.j && f2.k != f1.k)
-        {
-            notCommun = f2.k;
-            common1 = f2.i;
-            common2 = f2.j;
-        }
-        #region Para que pregunte si estan en el mismo plano
-        //if (p.Belongs(vertexes[notCommun]))//Si estan en el mismo plano devolver la euclidiana entre los baricentros si la recta esta dentro
-        //{
-        //    if ()
-        //    {
-
-        //    }
-        //    double[] c1 = new double[] { vertexes[common1].X, vertexes[common1].Y, vertexes[common1].Z };
-        //    double[] c2 = new double[] { vertexes[common2].X, vertexes[common2].Y, vertexes[common2].Z };
-        //    double[] v1 = new double[] { dual_verts[i].X, dual_verts[i].Y, dual_verts[i].Z };
-        //    double[] v2 = new double[] { dual_verts[j].X, dual_verts[j].Y, dual_verts[j].Z };
-        //    double sumA = euclidianDistance(c1, v1) + euclidianDistance(c1, v2);
-        //    double sumaB = euclidianDistance(c2, v1) + euclidianDistance(c2, v2);
-        //    return Math.Min(sumA, sumaB);
-        //}
-        #endregion
-        #region Para rotar y trasladar T2
-        Vector vn1 = new Vector(vertexes[common2].X - vertexes[common1].X, vertexes[common2].Y - vertexes[common1].Y, vertexes[common2].Z - vertexes[common1].Z);
-        vn1.normalize();
-        Vector wn1 = new Vector(vertexes[notCommun].X-vertexes[common1].X, vertexes[notCommun].Y - vertexes[common1].Y, vertexes[notCommun].Z - vertexes[common1].Z);
-        Vector aux = vn1.copy();
-        aux.multiply(aux.scalar_product(wn1));
-        wn1.elements[0] = wn1.elements[0] - aux.elements[0];
-        wn1.elements[1] = wn1.elements[1] - aux.elements[1];
-        wn1.elements[2] = wn1.elements[2] - aux.elements[2];
-        wn1.normalize();
-        Matrix t0 = new Matrix(4, 4);
-        t0.elements[0, 0] = 1;
-        t0.elements[1, 1] = 1;
-        t0.elements[2, 2] = 1;
-        t0.elements[0, 3] = -1 * vertexes[common1].X;
-        t0.elements[1, 3] = -1 * vertexes[common1].Y;
-        t0.elements[2, 3] = -1 * vertexes[common1].Z;
-        t0.elements[3, 3] = 1;
-        Matrix r1 = new Matrix(4, 4);
-        r1.elements[0, 0] = vn1.elements[0];
-        r1.elements[0, 1] = vn1.elements[1];
-        r1.elements[0, 2] = vn1.elements[2];
-        r1.elements[1, 0] = wn1.elements[0];
-        r1.elements[1, 1] = wn1.elements[1];
-        r1.elements[1, 2] = wn1.elements[2];
-        Vector toGetNormal = new Vector(vertexes[common2].X-vertexes[common1].X, vertexes[common2].Y - vertexes[common1].Y, vertexes[common2].Z - vertexes[common1].Z);
-        toGetNormal =  toGetNormal.vectorial_product(new Vector(vertexes[notCommun].X - vertexes[common1].X, vertexes[notCommun].Y - vertexes[common1].Y, vertexes[notCommun].Z - vertexes[common1].Z));
-        toGetNormal.normalize();
-        r1.elements[2, 0] = toGetNormal.elements[0];
-        r1.elements[2, 1] = toGetNormal.elements[1];
-        r1.elements[2, 2] = toGetNormal.elements[2];
-        r1.elements[3, 3] = 1;
-        Matrix toProyect = new Matrix(4, 1);
-        toProyect.elements[0, 0] = vertexes[notCommun].X;
-        toProyect.elements[1, 0] = vertexes[notCommun].Y;
-        toProyect.elements[2, 0] = vertexes[notCommun].Z;
-        toProyect.elements[3, 0] = 1;
-        Matrix m1 = r1.matricialProd(t0);
-        Matrix projection2 = m1.matricialProd(toProyect);
-
-        Vector L = new Vector(vertexes[common2].X - vertexes[common1].X, vertexes[common2].Y - vertexes[common1].Y, vertexes[common2].Z - vertexes[common1].Z);
-        Vertex baricenter2 = new Vertex((L.norm()+projection2.elements[0,0])/3,projection2.elements[1,0]/3,0);
-        #endregion
-        #region Para rotar y trasladar T1
-        int notCommun2 = f1.i;
-        if (f1.j != f2.i && f1.j != f2.j && f1.j != f2.k)
-            notCommun2 = f1.j;
-        if (f1.k != f2.i && f1.k != f2.j && f1.k != f2.k)
-            notCommun2 = f1.k;
-        Vector wn2 = new Vector(vertexes[notCommun2].X - vertexes[common1].X, vertexes[notCommun2].Y - vertexes[common1].Y, vertexes[notCommun2].Z - vertexes[common1].Z);
-        Vector aux2 = vn1.copy();
-        aux2.multiply(aux2.scalar_product(wn2));
-        wn2.elements[0] = wn2.elements[0] - aux2.elements[0];
-        wn2.elements[1] = wn2.elements[1] - aux2.elements[1];
-        wn2.elements[2] = wn2.elements[2] - aux2.elements[2];
-        wn2.normalize();      
-        Matrix r2 = new Matrix(4, 4);
-        r2.elements[0, 0] = vn1.elements[0];
-        r2.elements[0, 1] = vn1.elements[1];
-        r2.elements[0, 2] = vn1.elements[2];
-        r2.elements[1, 0] = wn2.elements[0];
-        r2.elements[1, 1] = wn2.elements[1];
-        r2.elements[1, 2] = wn2.elements[2];
-        Vector toGetNormal2 = new Vector(vertexes[common2].X - vertexes[common1].X, vertexes[common2].Y - vertexes[common1].Y, vertexes[common2].Z - vertexes[common1].Z);
-        toGetNormal2 = toGetNormal2.vectorial_product(new Vector(vertexes[notCommun2].X - vertexes[common1].X, vertexes[notCommun2].Y - vertexes[common1].Y, vertexes[notCommun2].Z - vertexes[common1].Z));
-        toGetNormal2.normalize();
-        r2.elements[2, 0] = toGetNormal2.elements[0];
-        r2.elements[2, 1] = toGetNormal2.elements[1];
-        r2.elements[2, 2] = toGetNormal2.elements[2];
-        r2.elements[3, 3] = 1;
-        Matrix toProyect2 = new Matrix(4, 1);
-        toProyect2.elements[0, 0] = vertexes[notCommun2].X;
-        toProyect2.elements[1, 0] = vertexes[notCommun2].Y;
-        toProyect2.elements[2, 0] = vertexes[notCommun2].Z;
-        toProyect2.elements[3, 0] = 1;
-        Matrix m2 = r2.matricialProd(t0);
-        Matrix projection1 = m2.matricialProd(toProyect2);
-        if (projection1.elements[1,0] * projection2.elements[1,0] > 0)//cambio el <
-            projection1.elements[1,0] *= -1;  
-        Vertex baricenter1 = new Vertex((L.norm() + projection1.elements[0, 0]) / 3, projection1.elements[1, 0] / 3, 0);
-        #endregion
-        //cambio interception
-        double interception = L.norm()/3+(projection1.elements[1,0]*projection2.elements[0,0]-projection2.elements[1,0]*projection1.elements[0,0])/(3*(projection1.elements[1,0]-projection2.elements[1,0]));
-        //if (Math.Abs(interception) <= L.norm())
-        if(interception >= 0 && interception <= L.norm())
-        {
-            Vector v = new Vector(baricenter1.X - baricenter2.X, baricenter1.Y - baricenter2.Y, baricenter1.Z - baricenter2.Z);
-            return v.norm();            
-        }
-        else
-        {   //Cambio forma de calcular
-            if (interception < 0)
-            {
-                //double[] c1 = new double[] { baricenter1.X, baricenter1.Y, baricenter1.Z };
-                //double[] c2 = new double[] { baricenter2.X, baricenter2.Y, baricenter2.Z };
-                //return euclidianDistance(c1, c2);
-                Vector v1 = new Vector(baricenter1.X, baricenter1.Y, baricenter1.Z);
-                Vector v2 = new Vector(baricenter2.X, baricenter2.Y, baricenter2.Z);
-                return v1.norm() + v2.norm();
-            }
-            else
-            {
-                Vector v = new Vector((projection1.elements[0, 0] - 2 * L.norm()) / 3, projection1.elements[1, 0] / 3, 0);
-                Vector w = new Vector((projection2.elements[0, 0] - 2 * L.norm()) / 3, projection2.elements[1, 0] / 3, 0);
-                return v.norm() + w.norm();
-            }
-        }
-    }
-    public double angular_dist(Face f1, Face f2)
-    {
-        return angular_dist(GetNormalToFace(f1),GetNormalToFace(f2));
-    }
-    public double angular_dist(Vector v1,Vector v2)
-    {
-        return (1 -v1.cos(v2)) / 2;
-    }
-    public double angular_dist(double[] a, double[] b)//for K-means
-    {
-        double scalarProd = 0,normA=0,normB=0;
-        for (int i = 0; i < a.Length; i++)
-        {
-            scalarProd += a[i] * b[i];
-            normA += a[i] * a[i];
-            normB += b[i] * b[i];
-        }
-        normA = Math.Sqrt(normA);
-        normB = Math.Sqrt(normB);
-        return (1-(scalarProd/(normA*normB)))/2;
-    }
     public Vector GetNormalToFace(Face f1)
     {
         Vector v1 = new Vector(vertexes[f1.i].X - vertexes[f1.j].X, vertexes[f1.i].Y - vertexes[f1.j].Y, vertexes[f1.i].Z - vertexes[f1.j].Z);
@@ -731,7 +742,7 @@ public class Mesh
     public double AreaFace(int i)//return i-face's area
     {
         double a, b, c, s;
-        a = euclidianDistance(vertexes[faces[i].i] ,vertexes[faces[i].j]);
+        a = euclidianDistance(vertexes[faces[i].i], vertexes[faces[i].j]);
         b = euclidianDistance(vertexes[faces[i].j], vertexes[faces[i].k]);
         c = euclidianDistance(vertexes[faces[i].k], vertexes[faces[i].i]);
         s = (a + b + c) / 2;
@@ -746,6 +757,38 @@ public class Mesh
     {
         return new Vector((vertexes[f.i].X + vertexes[f.j].X + vertexes[f.k].X) / 3, (vertexes[f.i].Y + vertexes[f.j].Y + vertexes[f.k].Y) / 3, (vertexes[f.i].Z + vertexes[f.j].Z + vertexes[f.k].Z) / 3);
     }
+    public List<int> adjacent_faces(Face f)
+    {
+        List<int> adjacents = new List<int>();
+        //it's mate is the extern
+        Tuple<int, int> he1 = new Tuple<int, int>(f.j, f.i);
+        Tuple<int, int> he2 = new Tuple<int, int>(f.k, f.j);
+        Tuple<int, int> he3 = new Tuple<int, int>(f.i, f.k);
+        if (indexOf.ContainsKey(he1))//there are axactly 3 he(s) by any face
+            adjacents.Add(indexOf[he1] / 3);
+        if (indexOf.ContainsKey(he2))
+            adjacents.Add(indexOf[he2] / 3);
+        if (indexOf.ContainsKey(he3))
+            adjacents.Add(indexOf[he3] / 3);
+        return adjacents;
+    }
+    public double euclidianDistance(Vertex v1, Vertex v2)
+    {
+        return Math.Sqrt(Math.Pow(v2.X - v1.X, 2) + Math.Pow(v2.Y - v1.Y, 2) + Math.Pow(v2.Z - v1.Z, 2));
+    }
+    public double euclidianDistance(double[] vector1, double[] vector2)
+    {
+        double dist = 0;
+        if (vector1.Length != vector2.Length)
+            throw new Exception("La distancia euclidiana solo esta definida para vectores con igual dimension");
+        for (int i = 0; i < vector1.Length; i++)
+        {
+            dist += Math.Pow(Math.Abs(vector1[i] - vector2[i]), 2);
+        }
+        return Math.Sqrt(dist);
+    }
+    #endregion
+
     #region to calculate volumetric distance
     public List<Tuple<double[],double[]>> Getbbx()
     {
@@ -763,16 +806,16 @@ public class Mesh
             catched[inside[k].index] = true;
             combinedArea += AreaFace(inside[k].index);
         }
-        inside.Clear();
-        inside = cones[j];
-        for (int k = 0; k < inside.Count; k++)
+        List<Face> inside2 = cones[j];
+        for (int k = 0; k < inside2.Count; k++)
         {
-            double area = AreaFace(inside[k].index);
+            double area = AreaFace(inside2[k].index);
             if (!catched[k])
                 combinedArea += area;
             else communArea += area;
         }
-
+        if (combinedArea == 0)
+            return 1;
         return 1-(communArea/combinedArea);//area comun = intercepcon de las areas y area conjunta = union de las areas
     }
     public List<Face> RemoveHiddenFaces(double theta, Face center, Vector normal, List<Face> insideCone)
@@ -791,8 +834,8 @@ public class Mesh
         //    if (!good[insideCone[i].index])
         //        continue;
         //    List<Face> inside = aabb.InsideShadow(c, insideCone[i], this.vertexes, good);
-        //    for (int j = 0; j < inside.Count; j++)//ya no hace falta
-        //        good[inside[j].index] = false;
+        //    //for (int j = 0; j < inside.Count; j++)//ya no hace falta
+        //    //    good[inside[j].index] = false;
         //}
         #endregion
         #region Raw Testing
@@ -810,23 +853,27 @@ public class Mesh
                     good[insideCone[j].index] = false;
             }
         }
-        #endregion
-        Vector nc = GetNormalToFace(center);
-        for (int i = 0; i < insideCone.Count; i++)
+        #endregion        
+        for (int j = 0; j < insideCone.Count; j++)
         {
-            if (!good[insideCone[i].index])
+            if (!good[insideCone[j].index])
                 continue;
-            if (nc.scalar_product(GetNormalToFace(insideCone[i])) > 0)
-                good[insideCone[i].index] = false;
+            if (normal.scalar_product(GetNormalToFace(insideCone[j])) > 0)
+            {
+                good[insideCone[j].index] = false;
+            }
         }
         List<Face> result = new List<Face>();
         for (int i = 0; i < CountFace; i++)
         {
-            if (good[i])
+            if (good[i] && normal.scalar_product(GetNormalToFace(faces[i])) <= 0)
+            {
                 result.Add(FacesAt(i));
+            }
         }
         return result;
     }
+   
     public void QuickSort(List<Face> elements, Vector C, int left, int right)
     {
         if(right>left)
@@ -867,18 +914,23 @@ public class Mesh
         return faces.Count / 20;
         //return Math.Min(Math.Max(faces.Count / 100, 1), 50);
     }
-    public List<Face> TestVisibility(int i,double theta=120)
+    public List<Face> TestVisibility(int i, bool getInShadow, double theta=60)
     {
+        crono.Restart();
+        crono.Start();
         aabb = new AABBTree(faces, vertexes, getleafSize());
-        var n = GetNormalToFace(faces[i]);        
-        List<Face>result = aabb.InsideCone(theta, Baricenter(i), GetNormalToFace(faces[i]), faces, vertexes);
-        var x = RemoveHiddenFaces(theta, FacesAt(i), n, result);
-        return x;
+        //var n = GetNormalToFace(faces[i]);        
+        //List<Face>result = aabb.InsideCone(theta, Baricenter(i),n, faces, vertexes);
+        //var x = RemoveHiddenFaces(theta, FacesAt(i), n, result);
+        //crono.Stop();
+        //var time = crono.ElapsedMilliseconds / 1000;
+        //return result;
+        //return x;
         //return result;
         //return aabb.InsideCone(theta, Baricenter(i), GetNormalToFace(faces[i]), faces, vertexes);
-        //return GetVisibility(i, theta);
+        return GetVisibility(i,getInShadow ,theta);
     }
-    public List<Face> GetVisibility(int i, double theta = 120)
+    public List<Face> GetVisibility(int i, bool includeInShadow,double theta = 120)
     {
         //List<Face> result = new List<Face>();
         Vector n = GetNormalToFace(faces[i]);
@@ -891,26 +943,26 @@ public class Mesh
         //        result.Add(faces[j]);
         //}
         #endregion
-        result = aabb.InsideCone(theta,Baricenter(i),n,faces,vertexes);
-        //result = RemoveHiddenFaces(theta, FacesAt(i), n, result);//tambien elimina las falsas intercepciones
+        result = aabb.InsideCone(theta, Baricenter(i), n, faces, vertexes);
+        #region For false positive
+        //for (int j = 0; j < result.Count; j++)
+        //{
+        //    //if (!good[insideCone[j].index])
+        //    //    continue;
+        //    if (n.scalar_product(GetNormalToFace(result[j])) > 0)
+        //    {
+        //        result.RemoveAt(j);
+        //        //good[insideCone[j].index] = false;
+        //    }
+        //}
+        #endregion
+        if(!includeInShadow)
+            result = RemoveHiddenFaces(theta, FacesAt(i), n, result);//tambien elimina las falsas intercepciones
         return result;
     }
-#endregion
-    public List<int> adjacent_faces(Face f)
-    {
-        List<int> adjacents = new List<int>();
-        //it's mate is the extern
-        Tuple<int, int> he1 = new Tuple<int, int>(f.j, f.i);
-        Tuple<int, int> he2 = new Tuple<int, int>(f.k, f.j);
-        Tuple<int, int> he3 = new Tuple<int, int>(f.i, f.k);
-        if (indexOf.ContainsKey(he1))//there are axactly 3 he(s) by any face
-            adjacents.Add(indexOf[he1] / 3);
-        if (indexOf.ContainsKey(he2))
-            adjacents.Add(indexOf[he2] / 3);
-        if (indexOf.ContainsKey(he3))
-            adjacents.Add(indexOf[he3] / 3);
-        return adjacents;
-    }
+    #endregion
+
+    #region Auxiliar methods to the form
     private void CenterAndScale()
     {
         Vertex gravCenter = new Vertex((xMin + xMax) / 2.0, (yMin + yMax) / 2.0, (zMin + zMax) / 2.0);
@@ -935,6 +987,26 @@ public class Mesh
 
         return result.ToArray();
     }
+    private string Cut(string name)//elimina la extension del archivo
+    {
+        int i = name.Length - 1;
+        while (name[i] != '.')
+            i--;
+        return name.Substring(0, i);
+    }
+    private static double toDouble(string number)
+    {
+        int i = number.Length - 1;
+
+        while (i >= 0 && number[i] != '.')
+            i--;
+
+        return (i >= 0) ? double.Parse(number) / (Math.Pow(10.0, number.Length - 1 - i)) : double.Parse(number);
+    }
+    #endregion
+
+    #region class extend methods
+
     private void AddVertex(double x, double y, double z)
     {
         vertexes.Add(new Vertex(x, y, z));
@@ -971,127 +1043,14 @@ public class Mesh
     {
         return edges[i];
     }
-    private string Cut(string name)//elimina la extension del archivo
-    {
-        int i = name.Length-1;
-        while (name[i] != '.')
-            i--;
-        return name.Substring(0, i);
-    }
-    private static double toDouble(string number)
-    {
-        int i = number.Length-1;
-
-        while (i >=0 && number[i] != '.')
-            i--;
-
-        return (i >= 0) ? double.Parse(number) / (Math.Pow(10.0, number.Length - 1 - i)) : double.Parse(number);
-    }
-    private void kMeans(int partitions = DEFAULT_CLUSTER_AMOUNT, int iterations = DEFAULT_KMEANS_ITERATION)
-    {
-        cluster = new int[this.CountFace];
-        int[] testCluster = new int[cluster.Length];
-        double eval = double.MaxValue, bestEval = double.MaxValue;
-        #region Accord Kmeans
-        //for (int i = 0; i < iterations; i++)
-        //{
-        //if (Distance == DistanceType.Combined1 || Distance == DistanceType.Combined2)
-        //{
-        //    KMeans km = new KMeans(partitions, angular_dist);
-        //    km.Randomize(this.afinityMatrix);
-        //    testCluster = km.Compute(afinityMatrix);  //Compute(this.distancesMatrix);
-        //                                              // eval = Evaluate(km, testCluster);
-        //                                              // if (eval < bestEval)
-        //    Array.Copy(testCluster, cluster, cluster.Length);
-        //}
-        //else
-        //{
-        //    KMeans km = new KMeans(partitions, angular_dist);
-        //    km.Randomize(this.afinityMatrix);
-        //    cluster = km.Compute(afinityMatrix);  //Compute(this.distancesMatrix);
-
-        //}
-   // }
     #endregion
-    if (Distance == DistanceType.Combined1 || Distance == DistanceType.Combined2)
+    
+    #region To Comapare Seg
+    public double compareWith(int[] s,bool randIndex=true,int numCloster=-1)
     {
-            KMeans km = new KMeans(partitions, angular_dist);
-            for (int i = 0; i < iterations; i++)
-            {
-                km.Randomize(this.afinityMatrix);
-                testCluster = km.Compute(afinityMatrix);
-                eval = Evaluate(km, testCluster);
-                if (eval < bestEval)
-                {
-                    Array.Copy(testCluster, cluster, cluster.Length);
-                    bestEval = eval;
-                }
-            }
-            //MyKmeans km = new MyKmeans(afinityMatrix, partitions, euclidianDistance);
-            //km.centroids = new double[partitions][];
-            //for (int i = 0; i < km.centroids.Length; i++)
-            //    km.centroids[i] = afinityMatrix[nextIndex[i]];
-            //cluster = km.Compute();  //Compute(this.distancesMatrix);
-        }
-        else
-    {
-            KMeans km = new KMeans(partitions, angular_dist);
-            for (int i = 0; i < iterations; i++)
-            {
-                km.Randomize(this.afinityMatrix);
-                testCluster = km.Compute(afinityMatrix);
-                eval = Evaluate(km, testCluster);
-                if (eval < bestEval)
-                {
-                    Array.Copy(testCluster, cluster, cluster.Length);
-                    bestEval = eval;
-                }
-            }
-            //MyKmeans km = new MyKmeans(afinityMatrix, partitions, euclidianDistance);
-            //km.centroids = new double[partitions][];
-            //for (int i = 0; i < km.centroids.Length; i++)
-            //    km.centroids[i] = afinityMatrix[nextIndex[i]];
-            //cluster = km.Compute();  //Compute(this.distancesMatrix);
-        }
-    }
-    private double Evaluate(KMeans km, int[] labels)
-    {
-        double eval = 0;
-        for (int i = 0; i < km.Clusters.Count; i++)
-        {
-            for (int j = 0; j < afinityMatrix.GetLength(0); j++)
-            {
-                if (labels[j] == i)
-                    eval += angular_dist(afinityMatrix[j], km.Clusters[i].Mean);
-            }
-        }
-        return eval;
-    }
-    public void Segment(int partitions = DEFAULT_CLUSTER_AMOUNT, int iterations = DEFAULT_KMEANS_ITERATION, double angular=0, double geodesic=0,int K=0)
-    {
-        //build_dual_graph(Math.Max((int)Math.Log(this.CountFace, 2.0), 3));
-        //build_dual_graph(Math.Max((int)(0.01 * (double)this.CountFace), 3));
-        if (buildedGraph==null || buildedGraph.Item1 != Distance || this.afinityMatrix==null || buildedGraph.Item2!=K || buildedGraph.Item3!=angular || buildedGraph.Item4!=geodesic)
-        {
-            int tam = K;
-            if (K == 0)
-            {
-                tam = (int)(0.1 * (double)CountFace);
-                while (tam > 600)
-                    tam /= 10;
-                if (tam < 10)
-                    tam = 10;
-            }
-            build_dual_graph(tam, false, angular, geodesic);
-            this.K = tam;
-            buildedGraph = new Tuple<DistanceType, int,double,double>(Distance,K,angular,geodesic);
-        }
-        kMeans(partitions, iterations);
-        this.partitions = partitions;
-    }
-    public double compareWith(int[] s)
-    {
-        return 1 - RandIndex(this.cluster, s);
+        if(randIndex)
+            return 1 - RandIndex(this.cluster, s);
+        return JackardIndex(this.cluster, s, numCloster);
     }
     private List<int> numDif(int[] s)
     {
@@ -1104,6 +1063,27 @@ public class Mesh
                 dif.Add(s[i]);
             }
         return dif;
+    }
+    /// <summary>
+    /// to evaluate quality of the segmentation
+    /// </summary>
+    /// <param name="km"></param>
+    /// <param name="labels"></param>
+    /// <returns>
+    /// The sum of the distance of all element of a group to its centroid
+    /// </returns>
+    private double Evaluate(KMeans km, int[] labels)
+    {
+        double eval = 0;
+        for (int i = 0; i < km.Clusters.Count; i++)
+        {
+            for (int j = 0; j < afinityMatrix.GetLength(0); j++)
+            {
+                if (labels[j] == i)
+                    eval += angular_dist(afinityMatrix[j], km.Clusters[i].Mean);
+            }
+        }
+        return eval;
     }
     private int[,] crossTab(int[]s1,int[] s2)
     {
@@ -1147,38 +1127,66 @@ public class Mesh
         t3 = (nis + njs) / 2;
         return (t1 + t2 - t3) / t1;
     }
-    public double euclidianDistance(Vertex v1,Vertex v2)
+    private Tuple<int, int> getMatching(double[][] m, bool[] r, bool[] c)
     {
-        return Math.Sqrt(Math.Pow(v2.X - v1.X, 2) + Math.Pow(v2.Y - v1.Y, 2) + Math.Pow(v2.Z - v1.Z, 2));
-    }
-    public double euclidianDistance(double[] vector1, double[] vector2)
-    {
-        double dist = 0;
-        if (vector1.Length != vector2.Length)
-            throw new Exception("La distancia euclidiana solo esta definida para vectores con igual dimension");
-        for (int i = 0; i < vector1.Length; i++)
+        double max = double.MinValue;
+        int row = -1, col = -1;
+        for (int i = 0; i < r.Length; i++)
         {
-            dist += Math.Pow(Math.Abs(vector1[i] - vector2[i]),2);
-        }
-        return Math.Sqrt(dist);
-    }
-    public void Vorinoy(int numClust)
-    {
-        this.partitions = numClust;
-        this.cluster = new int[this.CountFace];
-        build_dual_graph(10);//porque solo necesito conocer los 10 mas alejados para que sean los clusters
-        build_dual_graph(10, true);
-        for (int i = 0; i < cluster.Length; i++)
-        {
-            double dist = double.MaxValue;
-            for (int j = 0; j < numClust; j++)
+            for (int j = 0; j < c.Length; j++)
             {
-                if (distancesMatrix[i][nextIndex[j]] < dist)
+                if (!r[i] && !c[j] && m[i][j] > max)
                 {
-                    dist = distancesMatrix[i][nextIndex[j]];
-                    cluster[i] = j;
+                    max = m[i][j];
+                    row = i;
+                    col = j;
                 }
             }
         }
+        return new Tuple<int, int>(row, col);
     }
+    private double JackardIndex(int[] s1, int[] s2,int numClusters)
+    {
+        double[][] communAreas = new double[numClusters][];
+        for (int i = 0; i < numClusters; i++)
+            communAreas[i] = new double[numClusters];
+        double[] totalAreas1 = new double[numClusters];
+        double[] totalAreas2 = new double[numClusters];
+        for (int i = 0; i < s1.Length; i++)
+        {            
+            double area = AreaFace(i);
+            totalAreas1[s1[i]] += area;
+            totalAreas2[s2[i]] += area;
+            communAreas[s1[i]][s2[i]] += area; 
+        }
+        int[] matchings = new int[numClusters];
+        bool[] rows = new bool[numClusters], cols = new bool[numClusters];
+        for (int i = 0; i < numClusters; i++)
+        {
+            var m = getMatching(communAreas, rows, cols);
+            rows[m.Item1] = true;
+            cols[m.Item2] = true;
+            matchings[m.Item1] = m.Item2;
+        }
+        double cuadsSum = 0;
+        for (int i = 0; i < numClusters; i++)
+        {
+            double c = communAreas[i][matchings[i]];
+            double t1 = totalAreas1[i];
+            double t2 = totalAreas2[matchings[i]];
+            cuadsSum += Math.Pow(1 - (c /(t1+t2-c)), 2);
+        }
+        //To put matchings clusters of the same color
+        int[] auxList = new int[matchings.Length];
+        for (int i = 0; i < matchings.Length; i++)
+        {
+            auxList[matchings[i]] = i;
+        }
+        for (int i = 0; i < s2.Length; i++)
+        {
+            s2[i] = auxList[s2[i]];
+        }
+        return (1 / (Math.Sqrt(numClusters))) * Math.Sqrt(cuadsSum);
+    }
+    #endregion    
 }

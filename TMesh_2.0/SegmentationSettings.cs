@@ -31,7 +31,7 @@ namespace TMesh_2._0
             this.Close();
         }
 
-        private void textBox1_TextChanged(object sender, EventArgs e)
+        private void k_selector_TextChanged(object sender, EventArgs e)
         {
             int.TryParse(textBox1.Text, out K);
         }

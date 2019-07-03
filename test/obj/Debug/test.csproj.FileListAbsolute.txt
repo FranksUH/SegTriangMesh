@@ -1,0 +1,6 @@
+C:\Users\Frankie\Downloads\1nvestigacion\Frankie\TMesh_2.0(Nuevo K-Means)\test\bin\Debug\test.exe.config
+C:\Users\Frankie\Downloads\1nvestigacion\Frankie\TMesh_2.0(Nuevo K-Means)\test\bin\Debug\test.exe
+C:\Users\Frankie\Downloads\1nvestigacion\Frankie\TMesh_2.0(Nuevo K-Means)\test\bin\Debug\test.pdb
+C:\Users\Frankie\Downloads\1nvestigacion\Frankie\TMesh_2.0(Nuevo K-Means)\test\obj\Debug\test.csprojResolveAssemblyReference.cache
+C:\Users\Frankie\Downloads\1nvestigacion\Frankie\TMesh_2.0(Nuevo K-Means)\test\obj\Debug\test.exe
+C:\Users\Frankie\Downloads\1nvestigacion\Frankie\TMesh_2.0(Nuevo K-Means)\test\obj\Debug\test.pdb

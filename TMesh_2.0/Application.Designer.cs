@@ -1,6 +1,6 @@
 ﻿namespace TMesh_2._0
 {
-    partial class Form1
+    partial class Application
     {
         /// <summary>
         /// Required designer variable.
@@ -28,7 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Application));
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.archivoToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.abrirToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -52,7 +52,6 @@
             this.lblMid = new System.Windows.Forms.Label();
             this.lblNear = new System.Windows.Forms.Label();
             this.chkFarest = new System.Windows.Forms.CheckBox();
-            this.btnCeldas = new System.Windows.Forms.Button();
             this.chbJustDistances = new System.Windows.Forms.CheckBox();
             this.Board = new OpenTK.GLControl();
             this.lblInfo = new System.Windows.Forms.Label();
@@ -63,12 +62,12 @@
             this.button4 = new System.Windows.Forms.Button();
             this.button3 = new System.Windows.Forms.Button();
             this.button2 = new System.Windows.Forms.Button();
-            this.button1 = new System.Windows.Forms.Button();
+            this.btnSaveImg = new System.Windows.Forms.Button();
             this.btnCmp = new System.Windows.Forms.Button();
             this.lblSim = new System.Windows.Forms.Label();
             this.aabbTest = new System.Windows.Forms.CheckBox();
-            this.segPBar = new System.Windows.Forms.ProgressBar();
-            this.lblSegStatus = new System.Windows.Forms.Label();
+            this.chkTriangles = new System.Windows.Forms.CheckBox();
+            this.chkHiddenFaces = new System.Windows.Forms.CheckBox();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -185,11 +184,11 @@
             // 
             // btn_segment
             // 
-            this.btn_segment.Location = new System.Drawing.Point(684, 277);
+            this.btn_segment.Location = new System.Drawing.Point(684, 290);
             this.btn_segment.Name = "btn_segment";
             this.btn_segment.Size = new System.Drawing.Size(96, 33);
             this.btn_segment.TabIndex = 11;
-            this.btn_segment.Text = "Segmentar";
+            this.btn_segment.Text = "Segment";
             this.btn_segment.UseVisualStyleBackColor = true;
             this.btn_segment.Click += new System.EventHandler(this.btn_segment_Click);
             // 
@@ -215,21 +214,21 @@
             // 
             // panel1
             // 
-            this.panel1.Location = new System.Drawing.Point(611, 542);
+            this.panel1.Location = new System.Drawing.Point(592, 515);
             this.panel1.Name = "panel1";
             this.panel1.Size = new System.Drawing.Size(67, 30);
             this.panel1.TabIndex = 14;
             // 
             // panel2
             // 
-            this.panel2.Location = new System.Drawing.Point(684, 542);
+            this.panel2.Location = new System.Drawing.Point(684, 515);
             this.panel2.Name = "panel2";
             this.panel2.Size = new System.Drawing.Size(67, 30);
             this.panel2.TabIndex = 15;
             // 
             // panel3
             // 
-            this.panel3.Location = new System.Drawing.Point(757, 542);
+            this.panel3.Location = new System.Drawing.Point(778, 515);
             this.panel3.Name = "panel3";
             this.panel3.Size = new System.Drawing.Size(67, 30);
             this.panel3.TabIndex = 15;
@@ -237,7 +236,7 @@
             // lblFar
             // 
             this.lblFar.AutoSize = true;
-            this.lblFar.Location = new System.Drawing.Point(780, 575);
+            this.lblFar.Location = new System.Drawing.Point(622, 564);
             this.lblFar.Name = "lblFar";
             this.lblFar.Size = new System.Drawing.Size(0, 13);
             this.lblFar.TabIndex = 16;
@@ -245,7 +244,7 @@
             // lblMid
             // 
             this.lblMid.AutoSize = true;
-            this.lblMid.Location = new System.Drawing.Point(725, 388);
+            this.lblMid.Location = new System.Drawing.Point(711, 564);
             this.lblMid.Name = "lblMid";
             this.lblMid.Size = new System.Drawing.Size(0, 13);
             this.lblMid.TabIndex = 17;
@@ -253,7 +252,7 @@
             // lblNear
             // 
             this.lblNear.AutoSize = true;
-            this.lblNear.Location = new System.Drawing.Point(681, 575);
+            this.lblNear.Location = new System.Drawing.Point(806, 564);
             this.lblNear.Name = "lblNear";
             this.lblNear.Size = new System.Drawing.Size(0, 13);
             this.lblNear.TabIndex = 18;
@@ -268,16 +267,6 @@
             this.chkFarest.Text = "Show farest faces";
             this.chkFarest.UseVisualStyleBackColor = true;
             this.chkFarest.CheckedChanged += new System.EventHandler(this.chkFarest_CheckedChanged);
-            // 
-            // btnCeldas
-            // 
-            this.btnCeldas.Location = new System.Drawing.Point(684, 319);
-            this.btnCeldas.Name = "btnCeldas";
-            this.btnCeldas.Size = new System.Drawing.Size(96, 33);
-            this.btnCeldas.TabIndex = 20;
-            this.btnCeldas.Text = "Celdas Voronoi";
-            this.btnCeldas.UseVisualStyleBackColor = true;
-            this.btnCeldas.Click += new System.EventHandler(this.btnCeldas_Click);
             // 
             // chbJustDistances
             // 
@@ -309,10 +298,10 @@
             // lblInfo
             // 
             this.lblInfo.AutoSize = true;
-            this.lblInfo.Font = new System.Drawing.Font("Oswald", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblInfo.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblInfo.Location = new System.Drawing.Point(45, 638);
             this.lblInfo.Name = "lblInfo";
-            this.lblInfo.Size = new System.Drawing.Size(0, 28);
+            this.lblInfo.Size = new System.Drawing.Size(0, 24);
             this.lblInfo.TabIndex = 23;
             // 
             // chkLines
@@ -330,7 +319,7 @@
             // 
             // visibilityBtn
             // 
-            this.visibilityBtn.Location = new System.Drawing.Point(684, 358);
+            this.visibilityBtn.Location = new System.Drawing.Point(683, 329);
             this.visibilityBtn.Name = "visibilityBtn";
             this.visibilityBtn.Size = new System.Drawing.Size(96, 33);
             this.visibilityBtn.TabIndex = 25;
@@ -340,7 +329,7 @@
             // 
             // btnBbox
             // 
-            this.btnBbox.Location = new System.Drawing.Point(684, 397);
+            this.btnBbox.Location = new System.Drawing.Point(683, 368);
             this.btnBbox.Name = "btnBbox";
             this.btnBbox.Size = new System.Drawing.Size(96, 33);
             this.btnBbox.TabIndex = 26;
@@ -351,10 +340,10 @@
             // lblK
             // 
             this.lblK.AutoSize = true;
-            this.lblK.Font = new System.Drawing.Font("Oswald", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblK.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblK.Location = new System.Drawing.Point(231, 638);
             this.lblK.Name = "lblK";
-            this.lblK.Size = new System.Drawing.Size(0, 28);
+            this.lblK.Size = new System.Drawing.Size(0, 24);
             this.lblK.TabIndex = 27;
             // 
             // button4
@@ -385,21 +374,21 @@
             this.button2.Size = new System.Drawing.Size(40, 38);
             this.button2.TabIndex = 3;
             this.button2.UseVisualStyleBackColor = true;
-            this.button2.Click += new System.EventHandler(this.button2_Click);
+            this.button2.Click += new System.EventHandler(this.btnSaveSeg);
             // 
-            // button1
+            // btnSaveImg
             // 
-            this.button1.Image = global::TMesh_2._0.Properties.Resources.Save;
-            this.button1.Location = new System.Drawing.Point(40, 58);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(39, 38);
-            this.button1.TabIndex = 2;
-            this.button1.UseVisualStyleBackColor = true;
-            this.button1.Click += new System.EventHandler(this.button1_Click);
+            this.btnSaveImg.Image = global::TMesh_2._0.Properties.Resources.Save;
+            this.btnSaveImg.Location = new System.Drawing.Point(40, 58);
+            this.btnSaveImg.Name = "btnSaveImg";
+            this.btnSaveImg.Size = new System.Drawing.Size(39, 38);
+            this.btnSaveImg.TabIndex = 2;
+            this.btnSaveImg.UseVisualStyleBackColor = true;
+            this.btnSaveImg.Click += new System.EventHandler(this.btnSaveImage);
             // 
             // btnCmp
             // 
-            this.btnCmp.Location = new System.Drawing.Point(684, 436);
+            this.btnCmp.Location = new System.Drawing.Point(684, 407);
             this.btnCmp.Name = "btnCmp";
             this.btnCmp.Size = new System.Drawing.Size(96, 33);
             this.btnCmp.TabIndex = 28;
@@ -410,7 +399,7 @@
             // lblSim
             // 
             this.lblSim.AutoSize = true;
-            this.lblSim.Location = new System.Drawing.Point(646, 487);
+            this.lblSim.Location = new System.Drawing.Point(654, 489);
             this.lblSim.Name = "lblSim";
             this.lblSim.Size = new System.Drawing.Size(35, 13);
             this.lblSim.TabIndex = 29;
@@ -420,7 +409,7 @@
             // aabbTest
             // 
             this.aabbTest.AutoSize = true;
-            this.aabbTest.Location = new System.Drawing.Point(684, 200);
+            this.aabbTest.Location = new System.Drawing.Point(684, 223);
             this.aabbTest.Name = "aabbTest";
             this.aabbTest.Size = new System.Drawing.Size(104, 17);
             this.aabbTest.TabIndex = 30;
@@ -428,32 +417,38 @@
             this.aabbTest.UseVisualStyleBackColor = true;
             this.aabbTest.CheckedChanged += new System.EventHandler(this.aabbTest_CheckedChanged);
             // 
-            // segPBar
+            // chkTriangles
             // 
-            this.segPBar.Location = new System.Drawing.Point(40, 583);
-            this.segPBar.Name = "segPBar";
-            this.segPBar.Size = new System.Drawing.Size(478, 23);
-            this.segPBar.TabIndex = 31;
-            this.segPBar.Visible = false;
+            this.chkTriangles.AutoSize = true;
+            this.chkTriangles.Checked = true;
+            this.chkTriangles.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.chkTriangles.Location = new System.Drawing.Point(684, 200);
+            this.chkTriangles.Name = "chkTriangles";
+            this.chkTriangles.Size = new System.Drawing.Size(95, 17);
+            this.chkTriangles.TabIndex = 33;
+            this.chkTriangles.Text = "Show triangles";
+            this.chkTriangles.UseVisualStyleBackColor = true;
+            this.chkTriangles.CheckedChanged += new System.EventHandler(this.chkTriangles_CheckedChanged);
             // 
-            // lblSegStatus
+            // chkHiddenFaces
             // 
-            this.lblSegStatus.AutoSize = true;
-            this.lblSegStatus.Location = new System.Drawing.Point(60, 625);
-            this.lblSegStatus.Name = "lblSegStatus";
-            this.lblSegStatus.Size = new System.Drawing.Size(76, 13);
-            this.lblSegStatus.TabIndex = 32;
-            this.lblSegStatus.Text = "Building Graph";
-            this.lblSegStatus.Visible = false;
+            this.chkHiddenFaces.AutoSize = true;
+            this.chkHiddenFaces.Location = new System.Drawing.Point(684, 246);
+            this.chkHiddenFaces.Name = "chkHiddenFaces";
+            this.chkHiddenFaces.Size = new System.Drawing.Size(150, 17);
+            this.chkHiddenFaces.TabIndex = 34;
+            this.chkHiddenFaces.Text = "Include hidden by shadow";
+            this.chkHiddenFaces.UseVisualStyleBackColor = true;
+            this.chkHiddenFaces.CheckedChanged += new System.EventHandler(this.chkHiddenFaces_CheckedChanged);
             // 
-            // Form1
+            // Application
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.ClientSize = new System.Drawing.Size(891, 733);
-            this.Controls.Add(this.lblSegStatus);
-            this.Controls.Add(this.segPBar);
+            this.Controls.Add(this.chkHiddenFaces);
+            this.Controls.Add(this.chkTriangles);
             this.Controls.Add(this.aabbTest);
             this.Controls.Add(this.lblSim);
             this.Controls.Add(this.btnCmp);
@@ -464,7 +459,6 @@
             this.Controls.Add(this.lblInfo);
             this.Controls.Add(this.Board);
             this.Controls.Add(this.chbJustDistances);
-            this.Controls.Add(this.btnCeldas);
             this.Controls.Add(this.chkFarest);
             this.Controls.Add(this.lblNear);
             this.Controls.Add(this.lblMid);
@@ -479,11 +473,11 @@
             this.Controls.Add(this.button4);
             this.Controls.Add(this.button3);
             this.Controls.Add(this.button2);
-            this.Controls.Add(this.button1);
+            this.Controls.Add(this.btnSaveImg);
             this.Controls.Add(this.menuStrip1);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
-            this.Name = "Form1";
-            this.Text = "TMesh 2.0";
+            this.Name = "Application";
+            this.Text = "SegTriangMesh";
             this.Load += new System.EventHandler(this.Form1_Load);
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
@@ -501,7 +495,7 @@
         private System.Windows.Forms.ToolStripMenuItem ayudaToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem ayudaToolStripMenuItem1;
         private System.Windows.Forms.ToolStripMenuItem acercaDeToolStripMenuItem;
-        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.Button btnSaveImg;
         private System.Windows.Forms.Button button2;
         private System.Windows.Forms.Button button3;
         private System.Windows.Forms.Button button4;
@@ -515,11 +509,9 @@
         private System.Windows.Forms.Label lblFar;
         private System.Windows.Forms.Label lblMid;
         private System.Windows.Forms.Label lblNear;
-        private System.Windows.Forms.ToolStripMenuItem toolStripMenuItem1;
         private System.Windows.Forms.ToolStripMenuItem distanciaToolStripMenuItem;
         private System.Windows.Forms.ToolStripComboBox distanceSelector;
         private System.Windows.Forms.CheckBox chkFarest;
-        private System.Windows.Forms.Button btnCeldas;
         private System.Windows.Forms.CheckBox chbJustDistances;
         private OpenTK.GLControl Board;
         private System.Windows.Forms.Label lblInfo;
@@ -531,8 +523,9 @@
         private System.Windows.Forms.Label lblSim;
         private System.Windows.Forms.CheckBox aabbTest;
         private System.Windows.Forms.ToolStripMenuItem cargarToolStripMenuItem;
-        private System.Windows.Forms.ProgressBar segPBar;
-        private System.Windows.Forms.Label lblSegStatus;
+        private System.Windows.Forms.CheckBox chkTriangles;
+        private System.Windows.Forms.ToolStripMenuItem toolStripMenuItem1;
+        private System.Windows.Forms.CheckBox chkHiddenFaces;
     }
 }
 

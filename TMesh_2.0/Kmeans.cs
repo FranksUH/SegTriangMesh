@@ -9,6 +9,11 @@ namespace TMesh_2._0
 {
     public class MyKmeans
     {
+        /// <summary>
+        /// This class contains a manual implementation of Kmeans algorithm
+        /// by now is unused
+        /// </summary>
+
         private Func<double[], double[], double> distance;
         private int numClusters;
         public double[][] centroids;//numClusters X k, and is a generic point
@@ -31,7 +36,6 @@ namespace TMesh_2._0
         public void SetSeeds()
         {
             throw new NotImplementedException();
-            //this.centroids = init;
         }
         public void RandomizeCentroids()
         {

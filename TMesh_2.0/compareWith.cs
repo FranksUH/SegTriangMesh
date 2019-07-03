@@ -35,7 +35,6 @@ namespace TMesh_2._0
         {
             Settings();
             DrawTriangles();
-            //DrawLines();
             Board.SwapBuffers();
         }
         private void Board_Load(object sender, EventArgs e)
@@ -155,7 +154,6 @@ namespace TMesh_2._0
         private void Zoom(double factor)
         {
             tz += factor;
-            //scale += factor;
             Board.Invalidate();
         }
         private void Initialize()//Just for initialize the Form Class
@@ -177,7 +175,6 @@ namespace TMesh_2._0
             GL.LoadIdentity();
             Matrix4 matrix = Matrix4.Perspective(45.0f, w / h, 1.0f, 100.0f);
             GL.LoadMatrix(ref matrix);
-            //GL.Ortho(-w, w, -h, h, -Math.Max(w,h), Math.Max(w,h)); // Bottom-left corner pixel has coordinate (0, 0)
             GL.MatrixMode(MatrixMode.Modelview);
             GL.Enable(EnableCap.DepthTest);
 
@@ -194,8 +191,6 @@ namespace TMesh_2._0
             GL.Enable(EnableCap.Light5);
             GL.Enable(EnableCap.Light6);
             GL.Enable(EnableCap.Light7);
-            //float[] diffuse = {1,1,1 }; 
-            //GL.Light(LightName.Light0, LightParameter.Diffuse,diffuse);
         }
         private void Settings()//Prepare the board to just paint the triangles and lines
         {

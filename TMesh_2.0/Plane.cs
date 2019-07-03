@@ -34,9 +34,5 @@ namespace TMesh_2._0
             this.C *= -1;
             this.D *= -1;
         }
-        //public Vertex PutInto(Vertex v)//metodo para trasladar a v a este plano
-        //{
-
-        //}
     }
 }

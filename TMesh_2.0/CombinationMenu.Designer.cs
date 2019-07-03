@@ -30,26 +30,26 @@
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(CombinationMenu));
             this.groupBox1 = new System.Windows.Forms.GroupBox();
-            this.label2 = new System.Windows.Forms.Label();
-            this.label1 = new System.Windows.Forms.Label();
+            this.lblVolumetric = new System.Windows.Forms.Label();
+            this.nupVolumetric = new System.Windows.Forms.NumericUpDown();
+            this.lblGeodesic = new System.Windows.Forms.Label();
+            this.lblAngular = new System.Windows.Forms.Label();
             this.btnParmsBack = new System.Windows.Forms.Button();
             this.btnParametersReady = new System.Windows.Forms.Button();
             this.nupGeodesic = new System.Windows.Forms.NumericUpDown();
             this.nupAngular = new System.Windows.Forms.NumericUpDown();
-            this.lblVolumetric = new System.Windows.Forms.Label();
-            this.nupVolumetric = new System.Windows.Forms.NumericUpDown();
             this.groupBox1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.nupVolumetric)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.nupGeodesic)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.nupAngular)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.nupVolumetric)).BeginInit();
             this.SuspendLayout();
             // 
             // groupBox1
             // 
             this.groupBox1.Controls.Add(this.lblVolumetric);
             this.groupBox1.Controls.Add(this.nupVolumetric);
-            this.groupBox1.Controls.Add(this.label2);
-            this.groupBox1.Controls.Add(this.label1);
+            this.groupBox1.Controls.Add(this.lblGeodesic);
+            this.groupBox1.Controls.Add(this.lblAngular);
             this.groupBox1.Controls.Add(this.btnParmsBack);
             this.groupBox1.Controls.Add(this.btnParametersReady);
             this.groupBox1.Controls.Add(this.nupGeodesic);
@@ -61,23 +61,50 @@
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Set the parameters";
             // 
-            // label2
+            // lblVolumetric
             // 
-            this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(69, 66);
-            this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(52, 13);
-            this.label2.TabIndex = 5;
-            this.label2.Text = "Geodesic";
+            this.lblVolumetric.AutoSize = true;
+            this.lblVolumetric.Location = new System.Drawing.Point(69, 92);
+            this.lblVolumetric.Name = "lblVolumetric";
+            this.lblVolumetric.Size = new System.Drawing.Size(56, 13);
+            this.lblVolumetric.TabIndex = 7;
+            this.lblVolumetric.Text = "Volumetric";
             // 
-            // label1
+            // nupVolumetric
             // 
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(69, 38);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(43, 13);
-            this.label1.TabIndex = 4;
-            this.label1.Text = "Angular";
+            this.nupVolumetric.DecimalPlaces = 2;
+            this.nupVolumetric.Increment = new decimal(new int[] {
+            1,
+            0,
+            0,
+            131072});
+            this.nupVolumetric.Location = new System.Drawing.Point(174, 90);
+            this.nupVolumetric.Maximum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            this.nupVolumetric.Name = "nupVolumetric";
+            this.nupVolumetric.Size = new System.Drawing.Size(75, 20);
+            this.nupVolumetric.TabIndex = 6;
+            // 
+            // lblGeodesic
+            // 
+            this.lblGeodesic.AutoSize = true;
+            this.lblGeodesic.Location = new System.Drawing.Point(69, 66);
+            this.lblGeodesic.Name = "lblGeodesic";
+            this.lblGeodesic.Size = new System.Drawing.Size(52, 13);
+            this.lblGeodesic.TabIndex = 5;
+            this.lblGeodesic.Text = "Geodesic";
+            // 
+            // lblAngular
+            // 
+            this.lblAngular.AutoSize = true;
+            this.lblAngular.Location = new System.Drawing.Point(69, 38);
+            this.lblAngular.Name = "lblAngular";
+            this.lblAngular.Size = new System.Drawing.Size(43, 13);
+            this.lblAngular.TabIndex = 4;
+            this.lblAngular.Text = "Angular";
             // 
             // btnParmsBack
             // 
@@ -137,33 +164,6 @@
             this.nupAngular.TabIndex = 0;
             this.nupAngular.ValueChanged += new System.EventHandler(this.nupAngular_ValueChanged);
             // 
-            // lblVolumetric
-            // 
-            this.lblVolumetric.AutoSize = true;
-            this.lblVolumetric.Location = new System.Drawing.Point(69, 92);
-            this.lblVolumetric.Name = "lblVolumetric";
-            this.lblVolumetric.Size = new System.Drawing.Size(56, 13);
-            this.lblVolumetric.TabIndex = 7;
-            this.lblVolumetric.Text = "Volumetric";
-            // 
-            // nupVolumetric
-            // 
-            this.nupVolumetric.DecimalPlaces = 2;
-            this.nupVolumetric.Increment = new decimal(new int[] {
-            1,
-            0,
-            0,
-            131072});
-            this.nupVolumetric.Location = new System.Drawing.Point(174, 90);
-            this.nupVolumetric.Maximum = new decimal(new int[] {
-            1,
-            0,
-            0,
-            0});
-            this.nupVolumetric.Name = "nupVolumetric";
-            this.nupVolumetric.Size = new System.Drawing.Size(75, 20);
-            this.nupVolumetric.TabIndex = 6;
-            // 
             // CombinationMenu
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -176,9 +176,9 @@
             this.Text = "CombinationMenu";
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.nupVolumetric)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.nupGeodesic)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.nupAngular)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.nupVolumetric)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -190,8 +190,8 @@
         private System.Windows.Forms.Button btnParametersReady;
         private System.Windows.Forms.NumericUpDown nupGeodesic;
         private System.Windows.Forms.NumericUpDown nupAngular;
-        private System.Windows.Forms.Label label2;
-        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Label lblGeodesic;
+        private System.Windows.Forms.Label lblAngular;
         private System.Windows.Forms.Label lblVolumetric;
         private System.Windows.Forms.NumericUpDown nupVolumetric;
     }

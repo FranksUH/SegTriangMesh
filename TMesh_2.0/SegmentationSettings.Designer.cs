@@ -65,7 +65,7 @@
             this.textBox1.Size = new System.Drawing.Size(75, 20);
             this.textBox1.TabIndex = 9;
             this.textBox1.Text = "Auto";
-            this.textBox1.TextChanged += new System.EventHandler(this.textBox1_TextChanged);
+            this.textBox1.TextChanged += new System.EventHandler(this.k_selector_TextChanged);
             // 
             // label3
             // 
