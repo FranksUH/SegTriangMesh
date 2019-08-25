@@ -12,8 +12,10 @@ using System.Diagnostics;
 
 [Serializable]
 public class Mesh
-{    
-    public enum DistanceType { Angular, Geodesic, Volumetric, Combined1, Combined2 }
+{
+    public const int NUM_RAYS = 30;
+    public const double CONE_ANG = 2*Math.PI/3;
+    public enum DistanceType { Angular, Geodesic, Volumetric, Combined1, Combined2, SDF }
     double xMax, xMin, yMax, yMin, zMax, zMin;
     public bool GetAffinity;
     public int K;
@@ -44,6 +46,7 @@ public class Mesh
     public int countCols;
     public int[] nextIndex { get; set; }//para almacenar [i] que columna fue la escogida para ocupar la i-esima columna en la distancesMatrix
     public int[] nextIndex2 { get; set; }
+    public Vector[] helperRays { get; set; }
     public Mesh()
 	{
         vertexes = new List<Vertex>();
@@ -54,7 +57,9 @@ public class Mesh
         this.Distance = DistanceType.Angular;
         this.GetAffinity = true;
         crono = new Stopwatch();
-
+        this.helperRays = new Vector[NUM_RAYS];
+        initialize_uniform_ray_helpers();
+        //initialize_not_uniform_ray_helpers();
         xMax = -1;
         xMin = -1;
         yMax = -1;
@@ -221,6 +226,13 @@ public class Mesh
                                 dual_graph_cost[adj[j], indexInAdj] = cost;
                                 break;
                             }
+                        case DistanceType.SDF:
+                            {
+                                double cost = SDF(i, adj[j]);
+                                dual_graph_cost[i, j] = cost;
+                                dual_graph_cost[adj[j], indexInAdj] = cost;
+                                break;
+                            }
                         default:
                             break;
                     }
@@ -351,7 +363,8 @@ public class Mesh
                 {
                     for (int j = 0; j < distancesMatrix[0].Length; j++)//columna
                     {
-                        distancesMatrix[i][j] = distancesMatrix[i][j] / ColMax[j];
+                        if(ColMax[j] > 0)
+                            distancesMatrix[i][j] = distancesMatrix[i][j] / ColMax[j];
                     }
                 }
                 buildAfinity(dim1);
@@ -368,29 +381,32 @@ public class Mesh
                 k_coeficient += distancesMatrix[i][j];
             }
         }
-        k_coeficient /= (k * afinityMatrix.Length);
-        for (int i = 0; i < afinityMatrix.Length; i++)
+        if (k_coeficient != 0)
         {
-            for (int j = 0; j < k; j++)
+            k_coeficient /= (k * afinityMatrix.Length);
+            for (int i = 0; i < afinityMatrix.Length; i++)
             {
-                afinityMatrix[i][j] = 1 / (Math.Pow(Math.E, (distancesMatrix[i][j] / (k_coeficient * k_coeficient * 2))));
+                for (int j = 0; j < k; j++)
+                {
+                    afinityMatrix[i][j] = 1 / (Math.Pow(Math.E, (distancesMatrix[i][j] / (k_coeficient * k_coeficient * 2))));
+                }
             }
-        }
-        double[] norm = new double[distancesMatrix.Length];
-        for (int i = 0; i < distancesMatrix.Length; i++)
-        {
-            double normi = 0;
-            for (int j = 0; j < distancesMatrix[0].Length; j++)
+            double[] norm = new double[distancesMatrix.Length];
+            for (int i = 0; i < distancesMatrix.Length; i++)
             {
-                normi += afinityMatrix[i][j] * afinityMatrix[i][j];
+                double normi = 0;
+                for (int j = 0; j < distancesMatrix[0].Length; j++)
+                {
+                    normi += afinityMatrix[i][j] * afinityMatrix[i][j];
+                }
+                norm[i] = Math.Sqrt(normi);
             }
-            norm[i] = Math.Sqrt(normi);
-        }
-        for (int i = 0; i < distancesMatrix.Length; i++)
-        {
-            for (int j = 0; j < distancesMatrix[0].Length; j++)
+            for (int i = 0; i < distancesMatrix.Length; i++)
             {
-                afinityMatrix[i][j] /= norm[i];
+                for (int j = 0; j < distancesMatrix[0].Length; j++)
+                {
+                    afinityMatrix[i][j] /= norm[i];
+                }
             }
         }
     }
@@ -634,6 +650,8 @@ public class Mesh
         }
         normA = Math.Sqrt(normA);
         normB = Math.Sqrt(normB);
+        if (normA == 0 || normB == 0)
+            return 0;
         return (1 - (scalarProd / (normA * normB))) / 2;
     }
     #endregion
@@ -772,10 +790,11 @@ public class Mesh
             adjacents.Add(indexOf[he3] / 3);
         return adjacents;
     }
-    public double euclidianDistance(Vertex v1, Vertex v2)
+    public static double euclidianDistance(Vertex v1, Vertex v2)
     {
         return Math.Sqrt(Math.Pow(v2.X - v1.X, 2) + Math.Pow(v2.Y - v1.Y, 2) + Math.Pow(v2.Z - v1.Z, 2));
     }
+
     public double euclidianDistance(double[] vector1, double[] vector2)
     {
         double dist = 0;
@@ -1188,5 +1207,204 @@ public class Mesh
         }
         return (1 / (Math.Sqrt(numClusters))) * Math.Sqrt(cuadsSum);
     }
-    #endregion    
+    #endregion
+
+    #region SDF distance implementation
+    public void initialize_uniform_ray_helpers()
+    {
+        int pos = 0;
+        for (int i = 1; i <= 6; i++)
+        {
+            for (int j = 0; j < 5; j++)
+            {
+                double tj = (2 * Math.PI * j) / 5;
+                double si = ((CONE_ANG / 2) * i) / 7;
+                this.helperRays[pos++] = new Vector(Math.Sin(si) * Math.Cos(tj), Math.Sin(si) * Math.Sin(tj), Math.Cos(si));
+            }
+        }
+        //double tj = (2 * Math.PI * 0) / 5 
+        //double si = ((CONE_ANG / 2) * 0) / 7;
+        //this.helperRays[0] = new Vector(Math.Sin(si) * Math.Cos(tj), Math.Sin(si) * Math.Sin(tj), Math.Cos(si));
+
+    }
+    public void initialize_not_uniform_ray_helpers()
+    {
+        int pos = 0;
+        for (int i = 1; i <= 6; i++)
+        {
+            for (int j = 0; j < 5; j++)
+            {
+                double tj = (2 * Math.PI * j) / 6;
+                double si = ((CONE_ANG / 2) * i*i) / (1+i*i);
+                this.helperRays[pos++] = new Vector(Math.Sin(si) * Math.Cos(tj), Math.Sin(si) * Math.Sin(tj), Math.Cos(si));
+            }
+        }
+    }
+    public Tuple<List<Vertex>, List<Vertex>> getSDFRaysToView(int index)
+    {
+        if (aabb == null)
+            aabb = new AABBTree(faces, vertexes, getleafSize());
+        Face f = faces[index];
+
+        #region Just testing
+        //vertexes[0].X = 4;
+        //vertexes[0].Y = 2;
+        //vertexes[0].Z = 0;
+
+        //vertexes[1].X = 3;
+        //vertexes[1].Y = 3;
+        //vertexes[1].Z = 0;
+
+        //vertexes[2].X = 2;
+        //vertexes[2].Y = 1;
+        //vertexes[2].Z = 3;
+
+        //vertexes[3].X = 5;
+        //vertexes[3].Y = 2;
+        //vertexes[3].Z = 1;
+
+        //vertexes[4].X = 3;
+        //vertexes[4].Y = 4;
+        //vertexes[4].Z = 1;
+
+        //vertexes[5].X = 1;
+        //vertexes[5].Y = 0;
+        //vertexes[5].Z = 7;
+        //Face t = new Face(0, 1, 2);
+        //Face t1 = new Face(3, 4, 5);
+
+        //var bar = Baricenter(t);
+        //var norm = GetNormalToFace(t);
+
+        //var aux = aabb.faceInterceptedByRay(t1, bar, norm);
+        //var eee = 12;
+        #endregion
+        var baric = Baricenter(f);
+        var rotationMatrix = makeSDFMatrix(f);
+
+        double sum = 0;
+        double sumSquares = 0;
+        double[] distances = new double[helperRays.Length];
+        Vertex[] intercepts = new Vertex[helperRays.Length];
+
+        #region To paint just rays
+        //for (int i = 0; i < this.helperRays.Length; i++)
+        //{
+        //    var aux = rotationMatrix.prodWithVect(this.helperRays[i]);
+        //    intercepts[i] = new Vertex(baric.elements[0] + aux.elements[0], baric.elements[1] + aux.elements[1], baric.elements[2] + aux.elements[2]);
+        //}
+        #endregion
+
+        #region to paint with intercept
+        for (int i = 0; i < this.helperRays.Length; i++)
+        {
+            if(i==16)
+                intercepts[i] = aabb.getIntercept(baric, rotationMatrix.prodWithVect(this.helperRays[i]));
+            else
+            intercepts[i] = aabb.getIntercept(baric, rotationMatrix.prodWithVect(this.helperRays[i]));
+            distances[i] = euclidianDistance(intercepts[i], new Vertex(baric.elements[0], baric.elements[1], baric.elements[2]));
+            sum += distances[i];
+            sumSquares += distances[i] * distances[i];
+        }
+        #endregion
+
+        double sd = Math.Sqrt((sumSquares - ((sum * sum) / helperRays.Length)) / helperRays.Length);
+        sum /= helperRays.Length;
+        List<Vertex> rays = new List<Vertex>();
+        List<Vertex> outliers = new List<Vertex>();
+        for (int i = 0; i < helperRays.Length; i++)
+        {
+            if (Math.Abs(distances[i] - sum) <= sd)//not an outlier
+                rays.Add(intercepts[i]);
+            else
+                outliers.Add(intercepts[i]);
+        }
+        return new Tuple<List<Vertex>,List<Vertex>>(rays,outliers);
+    }
+    private TMesh_2._0.Matrix makeSDFMatrix(Face f)
+    {
+        Vector v10 = new Vector(this.vertexes[f.i], this.vertexes[f.j]); //is normalized
+        Vector v20 = new Vector(this.vertexes[f.k].X - this.vertexes[f.i].X, this.vertexes[f.k].Y - this.vertexes[f.i].Y, this.vertexes[f.k].Z - this.vertexes[f.i].Z);
+        var baric = Baricenter(f);
+        double sp = v20.scalar_product(v10);
+        v20.elements[0] -= sp * v10.elements[0];
+        v20.elements[1] -= sp * v10.elements[1];
+        v20.elements[2] -= sp * v10.elements[2];
+        v20.normalize();
+        Vector n = v10.vectorial_product(v20);
+        n.normalize();
+        n.multiply(-1);
+
+        TMesh_2._0.Matrix rotationMatrix = new TMesh_2._0.Matrix(3, 3);
+        rotationMatrix.elements[0, 0] = v10.elements[0];
+        rotationMatrix.elements[0, 1] = v20.elements[0];
+        rotationMatrix.elements[0, 2] = n.elements[0];
+        rotationMatrix.elements[1, 0] = v10.elements[1];
+        rotationMatrix.elements[1, 1] = v20.elements[1];
+        rotationMatrix.elements[1, 2] = n.elements[1];
+        rotationMatrix.elements[2, 0] = v10.elements[2];
+        rotationMatrix.elements[2, 1] = v20.elements[2];
+        rotationMatrix.elements[2, 2] = n.elements[2];
+        return rotationMatrix;
+    }
+    public double SDF(int i, int j)
+    {
+        return Math.Abs(SDF(faces[i]) - SDF(faces[j]));
+    }
+    public double SDF(Face f)
+    {
+        //double sd = Math.Sqrt((sumSquares - ((sum * sum) / helperRays.Length)) / helperRays.Length);
+        //sum /= helperRays.Length;
+        //double wheigts = 0, result = 0;
+        //for (int i = 0; i < helperRays.Length; i++)
+        //{
+        //    if (Math.Abs(distances[i] - sum) <= sd)//not an outlier
+        //    {
+        //        var normalFace = GetNormalToFace(f);
+        //        normalFace.multiply(-1);
+        //        double wi = normalFace.scalar_product(directions[i]);
+        //        result += (distances[i] * wi);
+        //        wheigts += wi;
+        //    }
+        //}
+        //return result / wheigts;
+        if (aabb == null)
+            aabb = new AABBTree(faces, vertexes, getleafSize());
+      
+        var baric = Baricenter(f);
+        var rotationMatrix = makeSDFMatrix(f);
+
+        double sum = 0;
+        double sumSquares = 0;
+        double[] distances = new double[helperRays.Length];
+        Vertex[] intercepts = new Vertex[helperRays.Length];
+
+        #region to paint with intercept
+        Vector[] directions = new Vector[NUM_RAYS];
+        for (int i = 0; i < this.helperRays.Length; i++)
+        {
+            directions[i] = rotationMatrix.prodWithVect(this.helperRays[i]);
+            intercepts[i] = aabb.getIntercept(baric, directions[i]);
+            distances[i] = euclidianDistance(intercepts[i], new Vertex(baric.elements[0], baric.elements[1], baric.elements[2]));
+            sum += distances[i];
+            sumSquares += distances[i] * distances[i];
+        }
+        #endregion
+        double sd = Math.Sqrt((sumSquares - ((sum * sum) / helperRays.Length)) / helperRays.Length);
+        sum /= helperRays.Length;
+        double wheigts = 0, result = 0;
+        for (int i = 0; i < helperRays.Length; i++)
+        {
+            if (Math.Abs(distances[i] - sum) <= sd)//not an outlier
+            {
+                var normalFace = GetNormalToFace(f);
+                normalFace.multiply(-1);
+                double wi = normalFace.scalar_product(directions[i]);
+                result += (distances[i] * wi);
+                wheigts += wi;
+            }
+        }
+        return result / wheigts;
+    }
+    #endregion
 }

@@ -21,6 +21,15 @@ namespace TMesh_2._0
             foreach (var item in elem)
                 elements.Add(item);
         }
+        public Vector(Vertex origin, Vertex destiny)
+        {
+            elements = new List<double>();
+            elements.Add(destiny.X - origin.X);
+            elements.Add(destiny.Y - origin.Y);
+            elements.Add(destiny.Z - origin.Z);
+            normalize();
+        }
+
         public double scalar_product(Vector v2)
         {
             double res = 0;

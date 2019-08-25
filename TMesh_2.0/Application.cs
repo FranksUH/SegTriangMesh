@@ -15,7 +15,7 @@ namespace TMesh_2._0
     public partial class Application : Form
     {
         Mesh mesh;
-        private enum Status { selected, segmented, none, Visible };
+        private enum Status { selected, segmented, none, Visible, SDF_view, SDF_preseg };
         private bool showBB;
         private Status act_state;
         private Color[] colors = { Color.Blue, Color.Red,Color.Green,Color.Gray,Color.Gold,Color.Violet,Color.Cyan, Color.Orange, Color.Lime,Color.Maroon,Color.ForestGreen,Color.DarkCyan};
@@ -24,7 +24,8 @@ namespace TMesh_2._0
         private List<Tuple<double[], double[]>> bbx;
         private List<Face> visibles;
         private Matrix4 matr;
-        private int NUMFACE = 2; //to calculate distance from NUMFACE to all other faces
+        private int NUMFACE = 11; //to calculate distance from NUMFACE to all other faces
+        private Tuple<List<Vertex>, List<Vertex>> rays; 
 
         public Application()
         {
@@ -188,15 +189,50 @@ namespace TMesh_2._0
                         }
                         else//default style for a triangle
                         {
-                            GL.Color3(Color.LightSeaGreen);
-                            Vector normal = Vector.normal(new Vector(mesh.VertexesAt(f.i).X, mesh.VertexesAt(f.i).Y, mesh.VertexesAt(f.i).Z), new Vector(mesh.VertexesAt(f.j).X, mesh.VertexesAt(f.j).Y, mesh.VertexesAt(f.j).Z), new Vector(mesh.VertexesAt(f.k).X, mesh.VertexesAt(f.k).Y, mesh.VertexesAt(f.k).Z));
-                            GL.Normal3(normal.elements[0], normal.elements[1], normal.elements[2]);
-                            GL.Vertex3(mesh.VertexesAt(f.i).X, mesh.VertexesAt(f.i).Y, mesh.VertexesAt(f.i).Z);
-                            GL.Vertex3(mesh.VertexesAt(f.j).X, mesh.VertexesAt(f.j).Y, mesh.VertexesAt(f.j).Z);
-                            GL.Vertex3(mesh.VertexesAt(f.k).X, mesh.VertexesAt(f.k).Y, mesh.VertexesAt(f.k).Z);
+                            if (this.act_state == Status.SDF_view)
+                            {
+                                if (i == NUMFACE)
+                                {
+                                    GL.Color4(0.6, 0.6, 0.6, 0.5);
+                                    Vector normal = Vector.normal(new Vector(mesh.VertexesAt(f.i).X, mesh.VertexesAt(f.i).Y, mesh.VertexesAt(f.i).Z), new Vector(mesh.VertexesAt(f.j).X, mesh.VertexesAt(f.j).Y, mesh.VertexesAt(f.j).Z), new Vector(mesh.VertexesAt(f.k).X, mesh.VertexesAt(f.k).Y, mesh.VertexesAt(f.k).Z));
+                                    GL.Normal3(normal.elements[0], normal.elements[1], normal.elements[2]);
+                                    GL.Vertex3(mesh.VertexesAt(f.i).X, mesh.VertexesAt(f.i).Y, mesh.VertexesAt(f.i).Z);
+                                    GL.Vertex3(mesh.VertexesAt(f.j).X, mesh.VertexesAt(f.j).Y, mesh.VertexesAt(f.j).Z);
+                                    GL.Vertex3(mesh.VertexesAt(f.k).X, mesh.VertexesAt(f.k).Y, mesh.VertexesAt(f.k).Z);
+                                }
+                            }
+                            else
+                            {
+                                GL.Color3(Color.LightSeaGreen);
+                                Vector normal = Vector.normal(new Vector(mesh.VertexesAt(f.i).X, mesh.VertexesAt(f.i).Y, mesh.VertexesAt(f.i).Z), new Vector(mesh.VertexesAt(f.j).X, mesh.VertexesAt(f.j).Y, mesh.VertexesAt(f.j).Z), new Vector(mesh.VertexesAt(f.k).X, mesh.VertexesAt(f.k).Y, mesh.VertexesAt(f.k).Z));
+                                GL.Normal3(normal.elements[0], normal.elements[1], normal.elements[2]);
+                                GL.Vertex3(mesh.VertexesAt(f.i).X, mesh.VertexesAt(f.i).Y, mesh.VertexesAt(f.i).Z);
+                                GL.Vertex3(mesh.VertexesAt(f.j).X, mesh.VertexesAt(f.j).Y, mesh.VertexesAt(f.j).Z);
+                                GL.Vertex3(mesh.VertexesAt(f.k).X, mesh.VertexesAt(f.k).Y, mesh.VertexesAt(f.k).Z);
+                            }
                         }
                     }
                 }
+            }
+            GL.End();
+        }
+        private void drawRays()
+        {
+            GL.LineWidth(3.0f);
+            GL.Color3(Color.Green);
+            GL.Begin(BeginMode.Lines);
+
+            var aux = mesh.Baricenter(mesh.FacesAt(NUMFACE));
+            for (int i = 0; i < rays.Item1.Count; i++)//paint rays
+            {
+                GL.Vertex3(aux.elements[0], aux.elements[1], aux.elements[2]);
+                GL.Vertex3(rays.Item1[i].X, rays.Item1[i].Y, rays.Item1[i].Z);
+            }
+            GL.Color3(Color.Red);
+            for (int i = 0; i < rays.Item2.Count; i++)//paint outliers
+            {
+                GL.Vertex3(aux.elements[0], aux.elements[1], aux.elements[2]);
+                GL.Vertex3(rays.Item2[i].X, rays.Item2[i].Y, rays.Item2[i].Z);
             }
             GL.End();
         }
@@ -453,6 +489,10 @@ namespace TMesh_2._0
                 }
                 GL.End();
             }
+            if (this.act_state == Status.SDF_view)
+            {
+                drawRays();
+            }
             // DrawNormal();
             Board.SwapBuffers();
         }
@@ -702,6 +742,14 @@ namespace TMesh_2._0
         {
             throw new Exception("Just testing");
         }
+
+        private void btnShowSDF_Click(object sender, EventArgs e)
+        {
+            rays = mesh.getSDFRaysToView(NUMFACE);
+            this.act_state = Status.SDF_view;
+            Board.Invalidate();
+        }
+
         private void chkHiddenFaces_CheckedChanged(object sender, EventArgs e)
         {
 
@@ -733,6 +781,10 @@ namespace TMesh_2._0
                 case 4:
                     distanceSelector.Text = "Combinacion Angular-Geodesica-Volumetrica";
                     this.mesh.Distance = Mesh.DistanceType.Combined2;
+                    break;
+                case 5:
+                    distanceSelector.Text = "SDF";
+                    this.mesh.Distance = Mesh.DistanceType.SDF;
                     break;
                 default:
                     break;

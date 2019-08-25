@@ -18,10 +18,11 @@ namespace TMesh_2._0
         public double xmin, xmax, ymin, ymax, zmin, zmax, root;
         const double TO_RADIAN = 0.01745329252;
         public List<double[]> tests;
-
+        private List<Vertex> vertexes;
 
         public AABBTree(List<Face>faces,List<Vertex>vertexes ,int elementsInLeaf)
         {
+            this.vertexes = vertexes;
             insideFaces = new List<Face>();
             buildAABB(faces, vertexes, elementsInLeaf);
             tests = new List<double[]>();
@@ -286,7 +287,7 @@ namespace TMesh_2._0
         {
             return new double[] {(xmax+xmin)/2,(ymax+ymin)/2,(zmax+zmin)/2 };
         }
-        private Vertex Baricenter(Face f, List<Vertex> vertexes)
+        private Vertex Baricenter(Face f)
         {
             return new Vertex((vertexes[f.i].X + vertexes[f.j].X + vertexes[f.k].X) / 3, (vertexes[f.i].Y + vertexes[f.j].Y + vertexes[f.k].Y) / 3, (vertexes[f.i].Z + vertexes[f.j].Z + vertexes[f.k].Z) / 3);
         }
@@ -349,7 +350,7 @@ namespace TMesh_2._0
                     {
                         foreach (var item in elements)//guardar
                         {
-                            if (pointInsideCone(theta, center,normal, Baricenter(item, vertexes)))
+                            if (pointInsideCone(theta, center,normal, Baricenter(item)))
                                 result.Add(item);
                         }
                     }
@@ -382,7 +383,7 @@ namespace TMesh_2._0
         {
             //quizaz lo que parece mas bobo que es por cada una de las otras caras preguntar si esta dentro de la sombra sea mas facil
 
-            Vertex baricenter = Baricenter(f,vertexes);
+            Vertex baricenter = Baricenter(f);
             Vector direction = new Vector(baricenter.X-center.X,baricenter.Y-center.Y,baricenter.Z-center.Z);
             bool inside = IsInterceptedByRay(new Vector(center.X,center.Y,center.Z), direction);
             List<Face> result = new List<Face>();
@@ -394,7 +395,7 @@ namespace TMesh_2._0
                 int i = 0;
                 while (i < extreme.Count && !inside)//eliminar los extremos que no estan en el cono, hasta encontrar el 1ro que si
                 {
-                    inside = pointInsideShadow(center, f,Baricenter(f,vertexes),new Vertex(extreme[i][0], extreme[i][1], extreme[i][2]),vertexes);
+                    inside = pointInsideShadow(center, f,Baricenter(f),new Vertex(extreme[i][0], extreme[i][1], extreme[i][2]),vertexes);
                     i++;
                 }
                 if (!inside)//si ningun extremo esta, probar con su centro u otros puntos centrales
@@ -405,7 +406,7 @@ namespace TMesh_2._0
                     i = 0;
                     while (i < insideP.Count && !inside)
                     {
-                        inside = pointInsideShadow(center, f, Baricenter(f, vertexes), new Vertex(insideP[i][0], insideP[i][1], insideP[i][2]), vertexes);
+                        inside = pointInsideShadow(center, f, Baricenter(f), new Vertex(insideP[i][0], insideP[i][1], insideP[i][2]), vertexes);
                         i++;
                     }
                 }
@@ -415,7 +416,7 @@ namespace TMesh_2._0
                 if (isLeaf)
                 {
                     foreach (var item in elements)//guardar                         
-                        if (item.index != f.index && analize[item.index] && pointInsideShadow(center, f, Baricenter(f, vertexes), Baricenter(item, vertexes), vertexes))//un triangulo esta contenido si su baricentro lo esta
+                        if (item.index != f.index && analize[item.index] && pointInsideShadow(center, f, Baricenter(f), Baricenter(item), vertexes))//un triangulo esta contenido si su baricentro lo esta
                         {
                             result.Add(item);
                             analize[item.index] = false;
@@ -500,5 +501,91 @@ namespace TMesh_2._0
             }
             return true;
         }
+
+        /// <summary>
+        /// Return the point where the ray with origin O and direction D
+        /// intercepts a triangle of the mesh surface
+        /// </summary>
+        /// <param name="origin"></param>
+        /// <param name="direction"></param>
+        /// <returns></returns>
+        public Vertex getIntercept(Vector origin, Vector direction)
+        {
+            if (IsInterceptedByRay(origin, direction))
+            {
+                Vertex origenAsVertex = new Vertex(origin.elements[0], origin.elements[1], origin.elements[2]);
+                if (isLeaf)
+                {
+                    Vertex closer = new Vertex(double.MaxValue,double.MaxValue,double.MaxValue);                    
+                    double bestDist = double.MaxValue;
+                    for (int i = 0; i < this.elements.Count; i++)
+                    {
+                        var intercept = faceInterceptedByRay(elements[i], origin, direction);
+                        if (intercept != null)
+                        {
+                            double dist = Mesh.euclidianDistance(intercept, origenAsVertex);
+                            if (dist < bestDist && dist > 0.00001)
+                            {
+                                bestDist = dist;
+                                closer = intercept;
+                            }
+                        }
+                    }
+                    if (bestDist == double.MaxValue)
+                        return null;
+                    return closer; 
+                }
+                else
+                {
+                    var left = leftChild.getIntercept(origin, direction);
+                    var rigth = rigthChild.getIntercept(origin, direction);
+                    if (left == null)
+                        return rigth;
+                    if (rigth == null)
+                        return left;
+                    if (Mesh.euclidianDistance(left, origenAsVertex) < Mesh.euclidianDistance(rigth, origenAsVertex))
+                        return left;
+                    return rigth;
+                }
+            }
+            else
+                return null;
+        }
+
+        /// <summary>
+        /// To get the intercept betwen the ray and a tringle
+        /// </summary>
+        /// <param name="f"></param>
+        /// <param name="origin"></param>
+        /// <param name="direction"></param>
+        /// <returns></returns>
+        public Vertex faceInterceptedByRay(Face f, Vector origin, Vector direction) //OK
+        {
+            Vector v10 = new Vector(this.vertexes[f.j].X - this.vertexes[f.i].X, this.vertexes[f.j].Y - this.vertexes[f.i].Y, this.vertexes[f.j].Z - this.vertexes[f.i].Z);
+            Vector v20 = new Vector(this.vertexes[f.k].X - this.vertexes[f.i].X, this.vertexes[f.k].Y - this.vertexes[f.i].Y, this.vertexes[f.k].Z - this.vertexes[f.i].Z);
+            var baric = Baricenter(f);
+            Vector bvo = new Vector(origin.elements[0] - vertexes[f.i].X, origin.elements[1] - vertexes[f.i].Y, origin.elements[2] - vertexes[f.i].Z);
+            Vector n = v10.vectorial_product(v20);
+            Vector q = bvo.vectorial_product(direction);
+            double alpha = direction.scalar_product(n);
+            double u = q.scalar_product(v20) / alpha * -1;
+            if (u < 0 || u > 1)
+                return null;
+            else
+            {
+                double v = q.scalar_product(v10) / alpha;
+                if (v < 0 || u + v > 1)
+                    return null;
+                else
+                {
+                    double t = -1 * (n.scalar_product(bvo) / alpha);
+                    if (t <= 0)
+                        return null;
+                    else
+                        return new Vertex(origin.elements[0] + t * direction.elements[0], origin.elements[1] + t * direction.elements[1], origin.elements[2] + t * direction.elements[2]);
+                }
+            }
+        }
+
     }
 }

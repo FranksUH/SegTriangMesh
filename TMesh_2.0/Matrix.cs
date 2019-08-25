@@ -9,6 +9,9 @@ namespace TMesh_2._0
     public class Matrix
     {
         public double[,] elements;
+        public int numRows { get { return this.elements.GetLength(0); } }
+        public int numCols { get { return this.elements.GetLength(1); } }
+
         public Matrix(int rows, int cols)
         {
             this.elements = new double[rows, cols];
@@ -28,6 +31,24 @@ namespace TMesh_2._0
                     }
                     result.elements[i, j] = sum;
                 }
+            }
+            return result;
+        }
+
+        public Vector prodWithVect(Vector v)
+        {
+            Vector result = new Vector();
+            result.elements = new List<double>();
+            if (v.size != this.numCols)
+                throw new Exception("Invalid matricial product");
+
+            double aux;
+            for (int i = 0; i < this.numRows; i++)
+            {
+                aux = 0;
+                for (int j = 0; j < v.size; j++)
+                    aux += v.elements[j] * this.elements[i, j];
+                result.elements.Add(aux);
             }
             return result;
         }

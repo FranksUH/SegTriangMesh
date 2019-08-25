@@ -68,6 +68,7 @@
             this.aabbTest = new System.Windows.Forms.CheckBox();
             this.chkTriangles = new System.Windows.Forms.CheckBox();
             this.chkHiddenFaces = new System.Windows.Forms.CheckBox();
+            this.btnShowSDF = new System.Windows.Forms.Button();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -127,10 +128,11 @@
             // 
             this.distanceSelector.Items.AddRange(new object[] {
             "Angular",
-            "Geodesica",
-            "Volumetrica",
-            "Producto Angular-Geodesica",
-            "Combinacion Angular-Geodesica"});
+            "Geodesic",
+            "Volumetric",
+            "Product Angular-Geodesic",
+            "Combinacion AGV",
+            "SDF"});
             this.distanceSelector.Name = "distanceSelector";
             this.distanceSelector.Size = new System.Drawing.Size(121, 23);
             this.distanceSelector.SelectedIndexChanged += new System.EventHandler(this.distanceSelector_SelectedIndexChanged);
@@ -329,7 +331,7 @@
             // 
             // btnBbox
             // 
-            this.btnBbox.Location = new System.Drawing.Point(683, 368);
+            this.btnBbox.Location = new System.Drawing.Point(683, 405);
             this.btnBbox.Name = "btnBbox";
             this.btnBbox.Size = new System.Drawing.Size(96, 33);
             this.btnBbox.TabIndex = 26;
@@ -388,7 +390,7 @@
             // 
             // btnCmp
             // 
-            this.btnCmp.Location = new System.Drawing.Point(684, 407);
+            this.btnCmp.Location = new System.Drawing.Point(684, 444);
             this.btnCmp.Name = "btnCmp";
             this.btnCmp.Size = new System.Drawing.Size(96, 33);
             this.btnCmp.TabIndex = 28;
@@ -441,12 +443,23 @@
             this.chkHiddenFaces.UseVisualStyleBackColor = true;
             this.chkHiddenFaces.CheckedChanged += new System.EventHandler(this.chkHiddenFaces_CheckedChanged);
             // 
+            // btnShowSDF
+            // 
+            this.btnShowSDF.Location = new System.Drawing.Point(683, 368);
+            this.btnShowSDF.Name = "btnShowSDF";
+            this.btnShowSDF.Size = new System.Drawing.Size(96, 33);
+            this.btnShowSDF.TabIndex = 35;
+            this.btnShowSDF.Text = "Show SDF Rays";
+            this.btnShowSDF.UseVisualStyleBackColor = true;
+            this.btnShowSDF.Click += new System.EventHandler(this.btnShowSDF_Click);
+            // 
             // Application
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.ClientSize = new System.Drawing.Size(891, 733);
+            this.Controls.Add(this.btnShowSDF);
             this.Controls.Add(this.chkHiddenFaces);
             this.Controls.Add(this.chkTriangles);
             this.Controls.Add(this.aabbTest);
@@ -526,6 +539,7 @@
         private System.Windows.Forms.CheckBox chkTriangles;
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItem1;
         private System.Windows.Forms.CheckBox chkHiddenFaces;
+        private System.Windows.Forms.Button btnShowSDF;
     }
 }
 
