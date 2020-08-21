@@ -1,0 +1,6 @@
+name: bunny.off
+metric: SDF
+numClust: 7
+time: 0
+numFaces: 199
+k: 19

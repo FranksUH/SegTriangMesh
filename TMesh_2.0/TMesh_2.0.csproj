@@ -88,7 +88,6 @@
       <DependentUpon>Application.cs</DependentUpon>
     </Compile>
     <Compile Include="Halfe_edge.cs" />
-    <Compile Include="Kmeans.cs" />
     <Compile Include="Matrix.cs" />
     <Compile Include="Mesh.cs" />
     <Compile Include="Plane.cs" />
@@ -100,6 +99,8 @@
     <Compile Include="SegmentationSettings.Designer.cs">
       <DependentUpon>SegmentationSettings.cs</DependentUpon>
     </Compile>
+    <Compile Include="Stats.cs" />
+    <Compile Include="StatSettings.cs" />
     <Compile Include="TestMenu.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -114,6 +115,7 @@
     </Compile>
     <Compile Include="Vector.cs" />
     <Compile Include="Vertex.cs" />
+    <Compile Include="_Kmeans.cs" />
     <EmbeddedResource Include="CombinationMenu.resx">
       <DependentUpon>CombinationMenu.cs</DependentUpon>
     </EmbeddedResource>

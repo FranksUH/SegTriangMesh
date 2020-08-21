@@ -14,6 +14,7 @@ using System.Diagnostics;
 public class Mesh
 {
     public const int NUM_RAYS = 30;
+    public const int SDF_alpha = 4;
     public const double CONE_ANG = 2*Math.PI/3;
     public enum DistanceType { Angular, Geodesic, Volumetric, Combined1, Combined2, SDF }
     double xMax, xMin, yMax, yMin, zMax, zMin;
@@ -24,10 +25,10 @@ public class Mesh
     public int CountFace { get; private set; }
     public int CountEdge { get; private set; }
     public DistanceType Distance;
-    private const int DEFAULT_KMEANS_ITERATION = 5;
+    private const int DEFAULT_KMEANS_ITERATION = 10;
     private const int DEFAULT_CLUSTER_AMOUNT = 3;
     public int partitions;
-    private Tuple<DistanceType,int,double,double> buildedGraph;
+    private Tuple<DistanceType,int,double,double,double> buildedGraph;
     private List<Vertex> vertexes;
     private List<Vertex> dual_verts;
     private List<Face> faces;
@@ -38,6 +39,7 @@ public class Mesh
     private Stopwatch crono;
     public double[,] dual_graph_cost { get; private set; }//just adyacents(Nx3)
     public double [,] combined_cost { get; private set; }
+    public double[,] geodesic_cost { get; private set; }
     public double[][] distancesMatrix { get; private set; }//NxK
     public double[][] distancesMatrixCombined { get; private set; }
     public double [][] afinityMatrix { get; set; }
@@ -47,6 +49,9 @@ public class Mesh
     public int[] nextIndex { get; set; }//para almacenar [i] que columna fue la escogida para ocupar la i-esima columna en la distancesMatrix
     public int[] nextIndex2 { get; set; }
     public Vector[] helperRays { get; set; }
+    public Vertex[] baricenters { get; private set; }
+    public double[] SDFValues { get; private set; }
+    public double[] SDFNormalized { get; private set; }
     public Mesh()
 	{
         vertexes = new List<Vertex>();
@@ -145,11 +150,12 @@ public class Mesh
     #endregion
 
     #region General methods for segment
-    public void build_dual_graph(int dim1,bool includeInShadow, bool getAll = false, double angular = 0, double geodesic = 0)
+    public void build_dual_graph(int dim1,bool includeInShadow, bool getAll = false, double angular = 0, double geodesic = 0,double SDFcoef = 0, bool useGeodesic= true, bool randomTest = true)
     {
         #region Initialize
         this.dual_graph_cost = new double[this.CountFace, 3];//each face has at most 3 adyacents
         this.dual_graph_edges = new int[this.CountFace, 3];
+        this.geodesic_cost = new double[this.CountFace, 3];
         this.cones = new List<Face>[this.CountFace];
 
         if (Distance == DistanceType.Combined1)
@@ -169,7 +175,7 @@ public class Mesh
         }
         #endregion
         #region Precalc
-        if (Distance == DistanceType.Volumetric || (Distance == DistanceType.Combined2 && (angular+geodesic) < 1))//Get all cones
+        if (Distance == DistanceType.Volumetric || (Distance == DistanceType.Combined2 && (angular+geodesic+SDFcoef) < 1))//Get all cones
         {
             for (int i = 0; i < CountFace; i++)
                 cones[i] = getCone(i,includeInShadow);
@@ -183,6 +189,11 @@ public class Mesh
                 if (dual_graph_cost[i, j] == 0)
                 {
                     int indexInAdj = adjacent_faces(faces[adj[j]]).FindIndex(x=>x==i);
+
+                    //To be used for select farest with geodesic dist
+                    double gc = geodesic_dist(i, adj[j]);
+                    geodesic_cost[i, j] = gc;
+                    geodesic_cost[adj[j], indexInAdj] = gc;
 
                     switch (Distance)
                     {
@@ -220,8 +231,10 @@ public class Mesh
                         case DistanceType.Combined2:
                             {
                                 double cost = (angular_dist(this.faces[i], this.faces[adj[j]]) * angular) + (geodesic_dist(i, adj[j]) * geodesic);
-                                if ((1 - angular - geodesic) > 0)
-                                    cost += (volumetricDist(i, adj[j]) * (1 - angular - geodesic));
+                                if (SDFcoef > 0)
+                                    cost += SDF_normalized(i, adj[j]) * SDFcoef;
+                                if ((1 - angular - geodesic - SDFcoef) > 0)
+                                    cost += (volumetricDist(i, adj[j]) * (1 - angular - geodesic - SDFcoef));
                                 dual_graph_cost[i, j] = cost;
                                 dual_graph_cost[adj[j], indexInAdj] = cost;
                                 break;
@@ -247,29 +260,51 @@ public class Mesh
         {
             #region Get cost to all faces and get the test
             Random r = new Random();
-            int firstIndex = r.Next(0, dim1); 
-            double[] cost = dijkstra(firstIndex);
+            int firstIndex = randomTest? r.Next(0, dim1): 0; 
+            double[] cost = dijkstra(firstIndex,dual_graph_cost);
+            double[] geoCost = dijkstra(firstIndex, geodesic_cost);
             this.nextIndex = new int[dim1];
-            this.nextIndex[firstIndex] = 0;
+            this.nextIndex[0] = firstIndex;
             double farthest = double.MinValue;//Max(Min(each col))
             double[] nearthest = new double[this.CountFace];//Min of each row
             for (int j = 0; j < cost.Length; j++)//column 0
             {
-                if (cost[j] > farthest)
+                if (useGeodesic)
                 {
-                    farthest = cost[j];
-                    nextIndex[1] = j;
+                    if (geoCost[j] > farthest)
+                    {
+                        farthest = geoCost[j];
+                        nextIndex[1] = j;
+                    }
+                    nearthest[j] = geoCost[j];
                 }
-                nearthest[j] = cost[j];
+                else
+                {
+                    if (cost[j] > farthest)
+                    {
+                        farthest = cost[j];
+                        nextIndex[1] = j;
+                    }
+                    nearthest[j] = cost[j];
+                }
                 this.distancesMatrix[j][0] = cost[j];
             }
             for (int i = 1; i < dim1; i++)
             {
-                cost = dijkstra(nextIndex[i]);
+                cost = dijkstra(nextIndex[i],dual_graph_cost);
+                geoCost = dijkstra(nextIndex[i], geodesic_cost);
                 for (int j = 0; j < cost.Length; j++)//update min of each row
                 {
-                    if (cost[j] < nearthest[j])
-                        nearthest[j] = cost[j];
+                    if (useGeodesic)
+                    {
+                        if (geoCost[j] < nearthest[j])
+                            nearthest[j] = geoCost[j];
+                    }
+                    else
+                    {
+                        if (cost[j] < nearthest[j])
+                            nearthest[j] = cost[j];
+                    }
                     this.distancesMatrix[j][i] = cost[j];
                 }
                 if ((i + 1) < dim1)//choose max
@@ -286,7 +321,7 @@ public class Mesh
             #region Just for product
             if (Distance == DistanceType.Combined1)
             {
-                double[] cost2 = dijkstra2(0);
+                double[] cost2 = dijkstra(0,combined_cost);
                 this.nextIndex[0] = 0;
                 double farthest2 = double.MinValue;//maximo de los minimos de las columnas
                 double[] nearthest2 = new double[this.CountFace];//minimo de las filas
@@ -302,7 +337,7 @@ public class Mesh
                 }
                 for (int i = 1; i < dim1; i++)
                 {
-                    cost2 = dijkstra2(nextIndex[i]);
+                    cost2 = dijkstra(nextIndex[i],combined_cost);
                     for (int j = 0; j < cost2.Length; j++)
                     {
                         if (cost2[j] < nearthest2[j])
@@ -329,7 +364,7 @@ public class Mesh
             #region Rellenar la matriz usando dijkstra por todas las caras
             for (int i = 0; i < this.CountFace; i++)
             {
-                distancesMatrix[i] = dijkstra(i);
+                distancesMatrix[i] = dijkstra(i,dual_graph_cost);
             }
             #endregion
         }
@@ -410,61 +445,86 @@ public class Mesh
             }
         }
     }
-    private void kMeans(int partitions = DEFAULT_CLUSTER_AMOUNT, int iterations = DEFAULT_KMEANS_ITERATION)
+    
+    private void kMeans(int partitions = DEFAULT_CLUSTER_AMOUNT, int iterations = DEFAULT_KMEANS_ITERATION, bool randomSeed = true)
     {
         cluster = new int[this.CountFace];
         int[] testCluster = new int[cluster.Length];
         double eval = double.MaxValue, bestEval = double.MaxValue;
-        if (Distance == DistanceType.Combined1 || Distance == DistanceType.Combined2)
-        {
-            KMeans km = new KMeans(partitions, angular_dist);
-            for (int i = 0; i < iterations; i++)
-            {
-                km.Randomize(this.afinityMatrix);
-                testCluster = km.Compute(afinityMatrix);
-                eval = Evaluate(km, testCluster);
-                if (eval < bestEval)
-                {
-                    Array.Copy(testCluster, cluster, cluster.Length);
-                    bestEval = eval;
-                }
-            }
-            // Uncoment this to use manual Kmeans
+        this.partitions = partitions;
 
-            //MyKmeans km = new MyKmeans(afinityMatrix, partitions, euclidianDistance);
-            //km.centroids = new double[partitions][];
-            //for (int i = 0; i < km.centroids.Length; i++)
-            //    km.centroids[i] = afinityMatrix[nextIndex[i]];
-            //cluster = km.Compute();  //Compute(this.distancesMatrix);
+        #region Accord Kmeans
+        //KMeans km = new KMeans(partitions, angular_dist);
+        //for (int i = 0; i < iterations; i++)
+        //{
+        //    km.Randomize(this.afinityMatrix);
+        //    testCluster = km.Compute(afinityMatrix);
+
+        //    //km.Randomize(this.distancesMatrix);
+        //    //testCluster = km.Compute(distancesMatrix);
+
+        //    eval = Evaluate(km, testCluster);
+        //    if (eval < bestEval)
+        //    {
+        //        Array.Copy(testCluster, cluster, cluster.Length);
+        //        bestEval = eval;
+        //    }
+        //}
+        #endregion
+
+        #region My Kmeans random
+        _Kmeans km = new _Kmeans(afinityMatrix, partitions, angular_dist);
+        if (!randomSeed)
+        {
+            km.centroids = new double[partitions][];
+            for (int i = 0; i < km.centroids.Length; i++)
+                km.centroids[i] = (double[])afinityMatrix[nextIndex[i]].Clone();
+            km.compute();
+            Array.Copy(km.clusters, cluster, cluster.Length);
         }
         else
         {
-            KMeans km = new KMeans(partitions, angular_dist);
             for (int i = 0; i < iterations; i++)
             {
-                km.Randomize(this.afinityMatrix);
-                testCluster = km.Compute(afinityMatrix);
-                eval = Evaluate(km, testCluster);
+                km.randomizeCentroids();
+                eval = km.compute();
                 if (eval < bestEval)
                 {
-                    Array.Copy(testCluster, cluster, cluster.Length);
+                    Array.Copy(km.clusters, cluster, cluster.Length);
                     bestEval = eval;
                 }
             }
-            // Uncoment this to use manual Kmeans
-
-            //MyKmeans km = new MyKmeans(afinityMatrix, partitions, euclidianDistance);
-            //km.centroids = new double[partitions][];
-            //for (int i = 0; i < km.centroids.Length; i++)
-            //    km.centroids[i] = afinityMatrix[nextIndex[i]];
-            //cluster = km.Compute();  //Compute(this.distancesMatrix);
         }
+        #endregion             
     }
-    public int Segment(bool includeInShadow, int partitions = DEFAULT_CLUSTER_AMOUNT, int iterations = DEFAULT_KMEANS_ITERATION, double angular = 0, double geodesic = 0, int K = 0)
+    public void printToFile(double[][]m,string message)
+    {
+        StreamWriter sw = new StreamWriter("testing.txt",true);
+        sw.WriteLine(message);
+        sw.WriteLine("------------------------------------------------------------------------------");
+        for (int i = 0; i < m.Length; i++)
+        {
+            for (int j = 0; j < m[0].Length; j++)
+            {
+                sw.Write(m[i][j] + " ");
+            }
+            sw.WriteLine();
+        }
+        sw.Close();
+    }
+
+    public bool testChangesApplies()
+    {
+        if (buildedGraph == null || buildedGraph.Item1 != Distance || this.afinityMatrix == null)
+            return true;
+        return false;
+    }
+
+    public int Segment(bool includeInShadow, int partitions = DEFAULT_CLUSTER_AMOUNT, int iterations = DEFAULT_KMEANS_ITERATION, double angular = 0, double geodesic = 0, double SDFcoef = 0, int K = 0, bool randomSeed = true, bool randomTest = true, bool useGeodesic = true, bool rebuild = false)
     {
         crono.Reset();
         crono.Start();
-        if (buildedGraph == null || buildedGraph.Item1 != Distance || this.afinityMatrix == null || buildedGraph.Item2 != K || buildedGraph.Item3 != angular || buildedGraph.Item4 != geodesic)
+        if ((buildedGraph == null || buildedGraph.Item1 != Distance || this.afinityMatrix == null || buildedGraph.Item2 != K || buildedGraph.Item3 != angular || buildedGraph.Item4 != geodesic || buildedGraph.Item5 != SDFcoef) || rebuild)
         {
             int tam = K;
             if (K == 0)
@@ -475,11 +535,11 @@ public class Mesh
                 if (tam < 10)
                     tam = 10;
             }
-            build_dual_graph(tam, includeInShadow, false, angular, geodesic);
+            build_dual_graph(tam, includeInShadow, false, angular, geodesic, SDFcoef,useGeodesic, randomTest);
             this.K = tam;
-            buildedGraph = new Tuple<DistanceType, int, double, double>(Distance, K, angular, geodesic);
+            buildedGraph = new Tuple<DistanceType, int, double, double,double>(Distance, K, angular, geodesic, SDFcoef);
         }
-        kMeans(partitions, iterations);
+        kMeans(partitions, iterations,randomSeed);
         this.partitions = partitions;
         crono.Stop();
         return (int)(crono.ElapsedMilliseconds / 1000);
@@ -692,7 +752,7 @@ public class Mesh
         }
         return result;
     }
-    private double[] dijkstra(int source)
+    private double[] dijkstra(int source, double[,]costs)
     {
         double[] minCost = new double[this.CountFace];
         SortedSet<Tuple<double, int>> pending = new SortedSet<Tuple<double, int>>();
@@ -712,38 +772,9 @@ public class Mesh
             for (int i = 0; i < 3 && dual_graph_edges[m.Item2, i] != -1; i++)//recorrer los adyacentes
             {
                 int v = dual_graph_edges[u, i];
-                if (!visited[v] && minCost[v] > minCost[u] + dual_graph_cost[u, i])//relax
+                if (!visited[v] && minCost[v] > minCost[u] + costs[u, i])//relax
                 {
-                    minCost[v] = minCost[u] + dual_graph_cost[u, i];
-                    pending.Add(new Tuple<double, int>(minCost[v], v));
-                }
-            }
-        }
-        return minCost;
-    }
-    private double[] dijkstra2(int source)
-    {
-        double[] minCost = new double[this.CountFace];
-        SortedSet<Tuple<double, int>> pending = new SortedSet<Tuple<double, int>>();
-        bool[] visited = new bool[this.CountFace + 2];
-        for (int i = 0; i < minCost.Length; i++)
-            minCost[i] = double.MaxValue;
-        minCost[source] = 0;
-        pending.Add(new Tuple<double, int>(0, source));
-        while (pending.Count > 0)
-        {
-            Tuple<double, int> m = pending.First();
-            pending.Remove(m);
-            int u = m.Item2;
-            if (visited[u]) continue; //Si el vértice actual ya fue visitado entonces sigo sacando elementos de la cola
-            visited[u] = true;         //Marco como visitado el vértice actual
-
-            for (int i = 0; i < 3 && dual_graph_edges[m.Item2, i] != -1; i++)//recorrer los adyacentes
-            {
-                int v = dual_graph_edges[u, i];
-                if (!visited[v] && minCost[v] > minCost[u] + combined_cost[u, i])//relax
-                {
-                    minCost[v] = minCost[u] + combined_cost[u, i];
+                    minCost[v] = minCost[u] + costs[u, i];
                     pending.Add(new Tuple<double, int>(minCost[v], v));
                 }
             }
@@ -930,8 +961,8 @@ public class Mesh
     }
     int getleafSize()
     {
-        return faces.Count / 20;
-        //return Math.Min(Math.Max(faces.Count / 100, 1), 50);
+        //return faces.Count / 20;
+        return Math.Min(Math.Max(faces.Count / 50, 1), 2);
     }
     public List<Face> TestVisibility(int i, bool getInShadow, double theta=60)
     {
@@ -1280,7 +1311,7 @@ public class Mesh
         //var eee = 12;
         #endregion
         var baric = Baricenter(f);
-        var rotationMatrix = makeSDFMatrix(f);
+        var rotationMatrix = makeSDF_Rotation_Matrix(f);
 
         double sum = 0;
         double sumSquares = 0;
@@ -1296,32 +1327,39 @@ public class Mesh
         #endregion
 
         #region to paint with intercept
+        int numIntercepts = 0;
         for (int i = 0; i < this.helperRays.Length; i++)
         {
-            if(i==16)
-                intercepts[i] = aabb.getIntercept(baric, rotationMatrix.prodWithVect(this.helperRays[i]));
-            else
             intercepts[i] = aabb.getIntercept(baric, rotationMatrix.prodWithVect(this.helperRays[i]));
-            distances[i] = euclidianDistance(intercepts[i], new Vertex(baric.elements[0], baric.elements[1], baric.elements[2]));
-            sum += distances[i];
-            sumSquares += distances[i] * distances[i];
+            if (intercepts[i] != null)
+            {
+                distances[i] = euclidianDistance(intercepts[i], new Vertex(baric.elements[0], baric.elements[1], baric.elements[2]));
+                sum += distances[i];
+                sumSquares += distances[i] * distances[i];
+                numIntercepts++;
+            }
         }
         #endregion
 
-        double sd = Math.Sqrt((sumSquares - ((sum * sum) / helperRays.Length)) / helperRays.Length);
-        sum /= helperRays.Length;
+        double sd = Math.Sqrt((sumSquares - ((sum * sum) / numIntercepts)) / numIntercepts);
+        sum /= numIntercepts;
         List<Vertex> rays = new List<Vertex>();
         List<Vertex> outliers = new List<Vertex>();
         for (int i = 0; i < helperRays.Length; i++)
         {
-            if (Math.Abs(distances[i] - sum) <= sd)//not an outlier
-                rays.Add(intercepts[i]);
+            if (intercepts[i] == null)
+                outliers.Add(new Vertex(baric.elements[0], baric.elements[1], baric.elements[2]));
             else
-                outliers.Add(intercepts[i]);
+            {
+                if (Math.Abs(distances[i] - sum) <= sd)//not an outlier
+                    rays.Add(intercepts[i]);
+                else
+                    outliers.Add(intercepts[i]);
+            }
         }
         return new Tuple<List<Vertex>,List<Vertex>>(rays,outliers);
     }
-    private TMesh_2._0.Matrix makeSDFMatrix(Face f)
+    private TMesh_2._0.Matrix makeSDF_Rotation_Matrix(Face f)
     {
         Vector v10 = new Vector(this.vertexes[f.i], this.vertexes[f.j]); //is normalized
         Vector v20 = new Vector(this.vertexes[f.k].X - this.vertexes[f.i].X, this.vertexes[f.k].Y - this.vertexes[f.i].Y, this.vertexes[f.k].Z - this.vertexes[f.i].Z);
@@ -1349,53 +1387,55 @@ public class Mesh
     }
     public double SDF(int i, int j)
     {
-        return Math.Abs(SDF(faces[i]) - SDF(faces[j]));
+        if (SDFValues == null)
+            make_SDF_Matrix();
+
+        return Math.Abs(SDFValues[i] - SDFValues[j]);
+        //return SDF_normalized(i, j);
+    }
+    public double SDF_normalized(int i, int j)
+    {
+        if (SDFValues == null)
+            make_SDF_Matrix();
+
+        return Math.Abs(SDFNormalized[i] - SDFNormalized[j]);
     }
     public double SDF(Face f)
     {
-        //double sd = Math.Sqrt((sumSquares - ((sum * sum) / helperRays.Length)) / helperRays.Length);
-        //sum /= helperRays.Length;
-        //double wheigts = 0, result = 0;
-        //for (int i = 0; i < helperRays.Length; i++)
-        //{
-        //    if (Math.Abs(distances[i] - sum) <= sd)//not an outlier
-        //    {
-        //        var normalFace = GetNormalToFace(f);
-        //        normalFace.multiply(-1);
-        //        double wi = normalFace.scalar_product(directions[i]);
-        //        result += (distances[i] * wi);
-        //        wheigts += wi;
-        //    }
-        //}
-        //return result / wheigts;
         if (aabb == null)
             aabb = new AABBTree(faces, vertexes, getleafSize());
       
         var baric = Baricenter(f);
-        var rotationMatrix = makeSDFMatrix(f);
+        var rotationMatrix = makeSDF_Rotation_Matrix(f);
 
         double sum = 0;
         double sumSquares = 0;
         double[] distances = new double[helperRays.Length];
         Vertex[] intercepts = new Vertex[helperRays.Length];
 
-        #region to paint with intercept
+        #region to get intercept
         Vector[] directions = new Vector[NUM_RAYS];
+        int numIntercepts = 0;
         for (int i = 0; i < this.helperRays.Length; i++)
         {
             directions[i] = rotationMatrix.prodWithVect(this.helperRays[i]);
             intercepts[i] = aabb.getIntercept(baric, directions[i]);
-            distances[i] = euclidianDistance(intercepts[i], new Vertex(baric.elements[0], baric.elements[1], baric.elements[2]));
-            sum += distances[i];
-            sumSquares += distances[i] * distances[i];
+
+            if (intercepts[i] != null)
+            {
+                distances[i] = euclidianDistance(intercepts[i], new Vertex(baric.elements[0], baric.elements[1], baric.elements[2]));
+                sum += distances[i];
+                sumSquares += distances[i] * distances[i];
+                numIntercepts++;
+            }
         }
         #endregion
-        double sd = Math.Sqrt((sumSquares - ((sum * sum) / helperRays.Length)) / helperRays.Length);
-        sum /= helperRays.Length;
+        double sd = Math.Sqrt((sumSquares - ((sum * sum) / numIntercepts)) / numIntercepts);
+        sum /= numIntercepts;
         double wheigts = 0, result = 0;
         for (int i = 0; i < helperRays.Length; i++)
         {
-            if (Math.Abs(distances[i] - sum) <= sd)//not an outlier
+            if (intercepts[i] != null && Math.Abs(distances[i] - sum) <= sd)//not an outlier
             {
                 var normalFace = GetNormalToFace(f);
                 normalFace.multiply(-1);
@@ -1404,7 +1444,25 @@ public class Mesh
                 wheigts += wi;
             }
         }
+        if (wheigts == 0)
+            return 0;
         return result / wheigts;
+    }
+    public void make_SDF_Matrix()
+    {
+        this.SDFValues = new double[this.CountFace];
+        this.SDFNormalized = new double[this.CountFace];
+        double maxSDF = 0, minSDF = double.MaxValue;
+        for (int i = 0; i < this.CountFace; i++)
+        {
+            SDFValues[i] = SDF(faces[i]);
+            if (SDFValues[i] > maxSDF)
+                maxSDF = SDFValues[i];
+            if (SDFValues[i] < minSDF)
+                minSDF = SDFValues[i];
+        }
+        for (int i = 0; i < this.CountFace; i++)
+            SDFNormalized[i] = Math.Log(((SDFValues[i] - minSDF)/(maxSDF-minSDF))*(SDF_alpha+1))/Math.Log(SDF_alpha+1);
     }
     #endregion
 }

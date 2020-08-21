@@ -13,6 +13,7 @@ namespace TMesh_2._0
     public partial class CombinationMenu : Form
     {
         public double angular = 0;
+        public double SDFcoef = 0;
         public double geodesic = 0;
         public CombinationMenu()
         {
@@ -25,6 +26,7 @@ namespace TMesh_2._0
         {
             this.angular = (double)this.nupAngular.Value;
             this.geodesic = (double)this.nupGeodesic.Value;
+            this.SDFcoef = (double)this.SDF_nup.Value;
             this.DialogResult = DialogResult.OK;
             this.Close();
         }
@@ -37,12 +39,17 @@ namespace TMesh_2._0
 
         private void nupAngular_ValueChanged(object sender, EventArgs e)
         {
-            nupVolumetric.Value = (decimal)(1 - nupAngular.Value - nupGeodesic.Value);
+            nupVolumetric.Value = (decimal)(1 - nupAngular.Value - nupGeodesic.Value - SDF_nup.Value);
         }
 
         private void nupGeodesic_ValueChanged(object sender, EventArgs e)
         {
-            nupVolumetric.Value = (decimal)(1 - nupAngular.Value - nupGeodesic.Value);
+            nupVolumetric.Value = (decimal)(1 - nupAngular.Value - nupGeodesic.Value - SDF_nup.Value);
+        }
+
+        private void SDF_nup_ValueChanged(object sender, EventArgs e)
+        {
+            nupVolumetric.Value = (decimal)(1 - nupAngular.Value - nupGeodesic.Value - SDF_nup.Value);
         }
     }
 }

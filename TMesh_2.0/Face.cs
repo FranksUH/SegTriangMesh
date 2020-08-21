@@ -14,6 +14,7 @@ namespace TMesh_2._0
         public int j { get; private set; }
         public int k { get; private set; }
         public int index; //index in the list of faces
+        public Vertex baricenter { get; private set; }
 
         public Face(int _i, int _j, int _k)
         {

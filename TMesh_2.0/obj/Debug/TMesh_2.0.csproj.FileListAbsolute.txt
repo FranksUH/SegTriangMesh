@@ -157,7 +157,6 @@ C:\Users\Frankie\Downloads\estudio\_ICIMAF\Frankie\SegTriangMesh\TMesh_2.0\bin\D
 C:\Users\Frankie\Downloads\estudio\_ICIMAF\Frankie\SegTriangMesh\TMesh_2.0\bin\Debug\OpenTK.xml
 C:\Users\Frankie\Downloads\estudio\_ICIMAF\Frankie\SegTriangMesh\TMesh_2.0\bin\Debug\OpenTK.dll.config
 C:\Users\Frankie\Downloads\estudio\_ICIMAF\Frankie\SegTriangMesh\TMesh_2.0\bin\Debug\OpenTK.GLControl.xml
-C:\Users\Frankie\Downloads\estudio\_ICIMAF\Frankie\SegTriangMesh\TMesh_2.0\obj\Debug\TMesh_2.0.csprojResolveAssemblyReference.cache
 C:\Users\Frankie\Downloads\estudio\_ICIMAF\Frankie\SegTriangMesh\TMesh_2.0\obj\Debug\TMesh_2._0.CombinationMenu.resources
 C:\Users\Frankie\Downloads\estudio\_ICIMAF\Frankie\SegTriangMesh\TMesh_2.0\obj\Debug\TMesh_2._0.compareWith.resources
 C:\Users\Frankie\Downloads\estudio\_ICIMAF\Frankie\SegTriangMesh\TMesh_2.0\obj\Debug\TMesh_2._0.Application.resources
@@ -169,3 +168,6 @@ C:\Users\Frankie\Downloads\estudio\_ICIMAF\Frankie\SegTriangMesh\TMesh_2.0\obj\D
 C:\Users\Frankie\Downloads\estudio\_ICIMAF\Frankie\SegTriangMesh\TMesh_2.0\obj\Debug\TMesh_2.0.exe.licenses
 C:\Users\Frankie\Downloads\estudio\_ICIMAF\Frankie\SegTriangMesh\TMesh_2.0\obj\Debug\TMesh_2.0.exe
 C:\Users\Frankie\Downloads\estudio\_ICIMAF\Frankie\SegTriangMesh\TMesh_2.0\obj\Debug\TMesh_2.0.pdb
+C:\Users\Frankie\Downloads\estudio\_ICIMAF\Frankie\SegTriangMesh\TMesh_2.0\obj\Debug\TMesh_2.0.csprojAssemblyReference.cache
+C:\Users\Frankie\Downloads\estudio\_ICIMAF\Frankie\SegTriangMesh\TMesh_2.0\obj\Debug\TMesh_2.0.csproj.CoreCompileInputs.cache
+C:\Users\Frankie\Downloads\estudio\_ICIMAF\Frankie\SegTriangMesh\TMesh_2.0\obj\Debug\TMesh_2.0.csproj.CopyComplete

@@ -30,6 +30,8 @@
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(CombinationMenu));
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.sdfCoef = new System.Windows.Forms.Label();
+            this.SDF_nup = new System.Windows.Forms.NumericUpDown();
             this.lblVolumetric = new System.Windows.Forms.Label();
             this.nupVolumetric = new System.Windows.Forms.NumericUpDown();
             this.lblGeodesic = new System.Windows.Forms.Label();
@@ -39,6 +41,7 @@
             this.nupGeodesic = new System.Windows.Forms.NumericUpDown();
             this.nupAngular = new System.Windows.Forms.NumericUpDown();
             this.groupBox1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.SDF_nup)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.nupVolumetric)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.nupGeodesic)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.nupAngular)).BeginInit();
@@ -46,6 +49,8 @@
             // 
             // groupBox1
             // 
+            this.groupBox1.Controls.Add(this.sdfCoef);
+            this.groupBox1.Controls.Add(this.SDF_nup);
             this.groupBox1.Controls.Add(this.lblVolumetric);
             this.groupBox1.Controls.Add(this.nupVolumetric);
             this.groupBox1.Controls.Add(this.lblGeodesic);
@@ -61,10 +66,38 @@
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Set the parameters";
             // 
+            // sdfCoef
+            // 
+            this.sdfCoef.AutoSize = true;
+            this.sdfCoef.Location = new System.Drawing.Point(69, 93);
+            this.sdfCoef.Name = "sdfCoef";
+            this.sdfCoef.Size = new System.Drawing.Size(28, 13);
+            this.sdfCoef.TabIndex = 9;
+            this.sdfCoef.Text = "SDF";
+            // 
+            // SDF_nup
+            // 
+            this.SDF_nup.DecimalPlaces = 2;
+            this.SDF_nup.Increment = new decimal(new int[] {
+            1,
+            0,
+            0,
+            131072});
+            this.SDF_nup.Location = new System.Drawing.Point(174, 91);
+            this.SDF_nup.Maximum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            this.SDF_nup.Name = "SDF_nup";
+            this.SDF_nup.Size = new System.Drawing.Size(75, 20);
+            this.SDF_nup.TabIndex = 8;
+            this.SDF_nup.ValueChanged += new System.EventHandler(this.SDF_nup_ValueChanged);
+            // 
             // lblVolumetric
             // 
             this.lblVolumetric.AutoSize = true;
-            this.lblVolumetric.Location = new System.Drawing.Point(69, 92);
+            this.lblVolumetric.Location = new System.Drawing.Point(69, 119);
             this.lblVolumetric.Name = "lblVolumetric";
             this.lblVolumetric.Size = new System.Drawing.Size(56, 13);
             this.lblVolumetric.TabIndex = 7;
@@ -78,7 +111,7 @@
             0,
             0,
             131072});
-            this.nupVolumetric.Location = new System.Drawing.Point(174, 90);
+            this.nupVolumetric.Location = new System.Drawing.Point(174, 117);
             this.nupVolumetric.Maximum = new decimal(new int[] {
             1,
             0,
@@ -108,7 +141,7 @@
             // 
             // btnParmsBack
             // 
-            this.btnParmsBack.Location = new System.Drawing.Point(72, 140);
+            this.btnParmsBack.Location = new System.Drawing.Point(72, 159);
             this.btnParmsBack.Name = "btnParmsBack";
             this.btnParmsBack.Size = new System.Drawing.Size(75, 23);
             this.btnParmsBack.TabIndex = 3;
@@ -118,7 +151,7 @@
             // 
             // btnParametersReady
             // 
-            this.btnParametersReady.Location = new System.Drawing.Point(174, 140);
+            this.btnParametersReady.Location = new System.Drawing.Point(174, 159);
             this.btnParametersReady.Name = "btnParametersReady";
             this.btnParametersReady.Size = new System.Drawing.Size(75, 23);
             this.btnParametersReady.TabIndex = 2;
@@ -176,6 +209,7 @@
             this.Text = "CombinationMenu";
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.SDF_nup)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.nupVolumetric)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.nupGeodesic)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.nupAngular)).EndInit();
@@ -194,5 +228,7 @@
         private System.Windows.Forms.Label lblAngular;
         private System.Windows.Forms.Label lblVolumetric;
         private System.Windows.Forms.NumericUpDown nupVolumetric;
+        private System.Windows.Forms.Label sdfCoef;
+        private System.Windows.Forms.NumericUpDown SDF_nup;
     }
 }

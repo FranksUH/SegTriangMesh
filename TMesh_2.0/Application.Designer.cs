@@ -38,6 +38,8 @@
             this.distanceSelector = new System.Windows.Forms.ToolStripComboBox();
             this.editarToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
+            this.showKmeansTestPointsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.testKmeansToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.ayudaToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.ayudaToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.acercaDeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -69,6 +71,7 @@
             this.chkTriangles = new System.Windows.Forms.CheckBox();
             this.chkHiddenFaces = new System.Windows.Forms.CheckBox();
             this.btnShowSDF = new System.Windows.Forms.Button();
+            this.btnSDFVals = new System.Windows.Forms.Button();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -140,7 +143,9 @@
             // editarToolStripMenuItem
             // 
             this.editarToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.toolStripMenuItem1});
+            this.toolStripMenuItem1,
+            this.showKmeansTestPointsToolStripMenuItem,
+            this.testKmeansToolStripMenuItem});
             this.editarToolStripMenuItem.Name = "editarToolStripMenuItem";
             this.editarToolStripMenuItem.Size = new System.Drawing.Size(69, 20);
             this.editarToolStripMenuItem.Text = "Opciones";
@@ -148,9 +153,23 @@
             // toolStripMenuItem1
             // 
             this.toolStripMenuItem1.Name = "toolStripMenuItem1";
-            this.toolStripMenuItem1.Size = new System.Drawing.Size(169, 22);
+            this.toolStripMenuItem1.Size = new System.Drawing.Size(206, 22);
             this.toolStripMenuItem1.Text = "Test Geodesic Dist";
             this.toolStripMenuItem1.Click += new System.EventHandler(this.toolStripMenuItem1_Click);
+            // 
+            // showKmeansTestPointsToolStripMenuItem
+            // 
+            this.showKmeansTestPointsToolStripMenuItem.Name = "showKmeansTestPointsToolStripMenuItem";
+            this.showKmeansTestPointsToolStripMenuItem.Size = new System.Drawing.Size(206, 22);
+            this.showKmeansTestPointsToolStripMenuItem.Text = "Show Kmeans test points";
+            this.showKmeansTestPointsToolStripMenuItem.Click += new System.EventHandler(this.ShowKmeansTestPointsToolStripMenuItem_Click);
+            // 
+            // testKmeansToolStripMenuItem
+            // 
+            this.testKmeansToolStripMenuItem.Name = "testKmeansToolStripMenuItem";
+            this.testKmeansToolStripMenuItem.Size = new System.Drawing.Size(206, 22);
+            this.testKmeansToolStripMenuItem.Text = "Test Kmeans";
+            this.testKmeansToolStripMenuItem.Click += new System.EventHandler(this.TestKmeansToolStripMenuItem_Click);
             // 
             // ayudaToolStripMenuItem
             // 
@@ -186,7 +205,7 @@
             // 
             // btn_segment
             // 
-            this.btn_segment.Location = new System.Drawing.Point(684, 290);
+            this.btn_segment.Location = new System.Drawing.Point(684, 286);
             this.btn_segment.Name = "btn_segment";
             this.btn_segment.Size = new System.Drawing.Size(96, 33);
             this.btn_segment.TabIndex = 11;
@@ -216,21 +235,21 @@
             // 
             // panel1
             // 
-            this.panel1.Location = new System.Drawing.Point(592, 515);
+            this.panel1.Location = new System.Drawing.Point(599, 562);
             this.panel1.Name = "panel1";
             this.panel1.Size = new System.Drawing.Size(67, 30);
             this.panel1.TabIndex = 14;
             // 
             // panel2
             // 
-            this.panel2.Location = new System.Drawing.Point(684, 515);
+            this.panel2.Location = new System.Drawing.Point(691, 562);
             this.panel2.Name = "panel2";
             this.panel2.Size = new System.Drawing.Size(67, 30);
             this.panel2.TabIndex = 15;
             // 
             // panel3
             // 
-            this.panel3.Location = new System.Drawing.Point(778, 515);
+            this.panel3.Location = new System.Drawing.Point(785, 562);
             this.panel3.Name = "panel3";
             this.panel3.Size = new System.Drawing.Size(67, 30);
             this.panel3.TabIndex = 15;
@@ -238,7 +257,7 @@
             // lblFar
             // 
             this.lblFar.AutoSize = true;
-            this.lblFar.Location = new System.Drawing.Point(622, 564);
+            this.lblFar.Location = new System.Drawing.Point(629, 611);
             this.lblFar.Name = "lblFar";
             this.lblFar.Size = new System.Drawing.Size(0, 13);
             this.lblFar.TabIndex = 16;
@@ -246,7 +265,7 @@
             // lblMid
             // 
             this.lblMid.AutoSize = true;
-            this.lblMid.Location = new System.Drawing.Point(711, 564);
+            this.lblMid.Location = new System.Drawing.Point(718, 611);
             this.lblMid.Name = "lblMid";
             this.lblMid.Size = new System.Drawing.Size(0, 13);
             this.lblMid.TabIndex = 17;
@@ -254,7 +273,7 @@
             // lblNear
             // 
             this.lblNear.AutoSize = true;
-            this.lblNear.Location = new System.Drawing.Point(806, 564);
+            this.lblNear.Location = new System.Drawing.Point(813, 611);
             this.lblNear.Name = "lblNear";
             this.lblNear.Size = new System.Drawing.Size(0, 13);
             this.lblNear.TabIndex = 18;
@@ -321,7 +340,7 @@
             // 
             // visibilityBtn
             // 
-            this.visibilityBtn.Location = new System.Drawing.Point(683, 329);
+            this.visibilityBtn.Location = new System.Drawing.Point(683, 325);
             this.visibilityBtn.Name = "visibilityBtn";
             this.visibilityBtn.Size = new System.Drawing.Size(96, 33);
             this.visibilityBtn.TabIndex = 25;
@@ -331,7 +350,7 @@
             // 
             // btnBbox
             // 
-            this.btnBbox.Location = new System.Drawing.Point(683, 405);
+            this.btnBbox.Location = new System.Drawing.Point(684, 442);
             this.btnBbox.Name = "btnBbox";
             this.btnBbox.Size = new System.Drawing.Size(96, 33);
             this.btnBbox.TabIndex = 26;
@@ -390,7 +409,7 @@
             // 
             // btnCmp
             // 
-            this.btnCmp.Location = new System.Drawing.Point(684, 444);
+            this.btnCmp.Location = new System.Drawing.Point(683, 481);
             this.btnCmp.Name = "btnCmp";
             this.btnCmp.Size = new System.Drawing.Size(96, 33);
             this.btnCmp.TabIndex = 28;
@@ -401,7 +420,7 @@
             // lblSim
             // 
             this.lblSim.AutoSize = true;
-            this.lblSim.Location = new System.Drawing.Point(654, 489);
+            this.lblSim.Location = new System.Drawing.Point(661, 536);
             this.lblSim.Name = "lblSim";
             this.lblSim.Size = new System.Drawing.Size(35, 13);
             this.lblSim.TabIndex = 29;
@@ -445,7 +464,7 @@
             // 
             // btnShowSDF
             // 
-            this.btnShowSDF.Location = new System.Drawing.Point(683, 368);
+            this.btnShowSDF.Location = new System.Drawing.Point(683, 364);
             this.btnShowSDF.Name = "btnShowSDF";
             this.btnShowSDF.Size = new System.Drawing.Size(96, 33);
             this.btnShowSDF.TabIndex = 35;
@@ -453,12 +472,23 @@
             this.btnShowSDF.UseVisualStyleBackColor = true;
             this.btnShowSDF.Click += new System.EventHandler(this.btnShowSDF_Click);
             // 
+            // btnSDFVals
+            // 
+            this.btnSDFVals.Location = new System.Drawing.Point(683, 403);
+            this.btnSDFVals.Name = "btnSDFVals";
+            this.btnSDFVals.Size = new System.Drawing.Size(96, 33);
+            this.btnSDFVals.TabIndex = 36;
+            this.btnSDFVals.Text = "Show SDF";
+            this.btnSDFVals.UseVisualStyleBackColor = true;
+            this.btnSDFVals.Click += new System.EventHandler(this.btnSDFVals_Click);
+            // 
             // Application
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.ClientSize = new System.Drawing.Size(891, 733);
+            this.Controls.Add(this.btnSDFVals);
             this.Controls.Add(this.btnShowSDF);
             this.Controls.Add(this.chkHiddenFaces);
             this.Controls.Add(this.chkTriangles);
@@ -540,6 +570,9 @@
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItem1;
         private System.Windows.Forms.CheckBox chkHiddenFaces;
         private System.Windows.Forms.Button btnShowSDF;
+        private System.Windows.Forms.Button btnSDFVals;
+        private System.Windows.Forms.ToolStripMenuItem showKmeansTestPointsToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem testKmeansToolStripMenuItem;
     }
 }
 
