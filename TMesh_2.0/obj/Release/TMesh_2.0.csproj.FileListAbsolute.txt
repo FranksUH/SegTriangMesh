@@ -1,9 +1,0 @@
-C:\Users\Frankie\Downloads\estudio\_ICIMAF\Frankie\TMesh_2.0\TMesh_2.0\obj\Release\TMesh_2._0.CombinationMenu.resources
-C:\Users\Frankie\Downloads\estudio\_ICIMAF\Frankie\TMesh_2.0\TMesh_2.0\obj\Release\TMesh_2._0.compareWith.resources
-C:\Users\Frankie\Downloads\estudio\_ICIMAF\Frankie\TMesh_2.0\TMesh_2.0\obj\Release\TMesh_2._0.Application.resources
-C:\Users\Frankie\Downloads\estudio\_ICIMAF\Frankie\TMesh_2.0\TMesh_2.0\obj\Release\TMesh_2._0.Properties.Resources.resources
-C:\Users\Frankie\Downloads\estudio\_ICIMAF\Frankie\TMesh_2.0\TMesh_2.0\obj\Release\TMesh_2._0.SegmentationSettings.resources
-C:\Users\Frankie\Downloads\estudio\_ICIMAF\Frankie\TMesh_2.0\TMesh_2.0\obj\Release\TMesh_2._0.TestMenu.resources
-C:\Users\Frankie\Downloads\estudio\_ICIMAF\Frankie\TMesh_2.0\TMesh_2.0\obj\Release\TMesh_2._0.TestResults.resources
-C:\Users\Frankie\Downloads\estudio\_ICIMAF\Frankie\TMesh_2.0\TMesh_2.0\obj\Release\TMesh_2.0.csproj.GenerateResource.Cache
-C:\Users\Frankie\Downloads\estudio\_ICIMAF\Frankie\TMesh_2.0\TMesh_2.0\obj\Release\TMesh_2.0.exe.licenses
